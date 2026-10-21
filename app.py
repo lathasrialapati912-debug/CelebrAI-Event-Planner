@@ -679,7 +679,7 @@ if st.button("✨ Generate My AI Event Plan", use_container_width=True):
         else:
             st.warning("Gemini returned an empty response. Try again.")
 
-    except Exception as e:
+        except Exception as e:
         error_message = str(e)
 
         if "503" in error_message or "UNAVAILABLE" in error_message:
