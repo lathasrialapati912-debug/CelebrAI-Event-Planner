@@ -661,7 +661,7 @@ if st.button("✨ Generate My AI Event Plan", use_container_width=True):
         with st.spinner("✨ Gemini is planning your celebration..."):
 
             response = client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-3.5-flash-lite",
                 contents=prompt
             )
 
@@ -1630,9 +1630,14 @@ if st.button(
             "✨ CelebrAI is designing your perfect celebration..."
         ):
             recommendation_response = client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-3.5-flash-lite",
                 contents=recommendation_prompt
             )
+            result = st.write_stream(
+        chunk.text
+        for chunk in response
+        if chunk.text
+    )
 
         if recommendation_response.text:
             st.success("🎉 Your personalized theme recommendation is ready!")
