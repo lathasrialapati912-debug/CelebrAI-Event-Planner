@@ -1625,51 +1625,53 @@ if st.button(
     Use clear headings, friendly language, and attractive formatting.
     """
 
-    try:
-        with st.spinner(
-            "✨ CelebrAI is designing your perfect celebration..."
-        ):
-            recommendation_response = client.models.generate_content(
-                model="gemini-3.5-flash-lite",
-                contents=recommendation_prompt
-            )
-            result = st.write_stream(
-        chunk.text
-        for chunk in response
-        if chunk.text
-    )
 
-        if recommendation_response.text:
-            st.success("🎉 Your personalized theme recommendation is ready!")
+try:
+    with st.spinner(
+        "✨ CelebrAI is designing your perfect celebration..."
+    ):
+        recommendation_response = client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=recommendation_prompt
+        )
 
-            st.markdown(recommendation_response.text)
+    if recommendation_response.text:
+        recommendation_text = recommendation_response.text
 
-            st.download_button(
-                "📥 Download Theme Recommendation",
-                data=recommendation_response.text,
-                file_name="CelebrAI_Theme_Recommendation.txt",
-                mime="text/plain",
-                use_container_width=True,
-                key="download_theme_recommendation"
-            )
-        else:
-            st.warning(
-                "The AI returned an empty response. Please try again."
-            )
+        st.success("🎉 Your personalized theme recommendation is ready!")
+        st.markdown(recommendation_text)
 
-    except Exception as e:
-        error_message = str(e)
+        st.download_button(
+            "📥 Download Theme Recommendation",
+            data=recommendation_text,
+            file_name="CelebrAI_Theme_Recommendation.txt",
+            mime="text/plain",
+            use_container_width=True,
+            key="download_theme_recommendation"
+        )
 
-        if "503" in error_message or "UNAVAILABLE" in error_message:
-            st.warning(
-                "Gemini is temporarily busy. Please wait a little and retry."
-            )
-        elif "429" in error_message or "RESOURCE_EXHAUSTED" in error_message:
-            st.warning(
-                "The AI request limit may have been reached. "
-                "Please try again later."
-            )
-        else:
-            st.error("Unable to generate a recommendation.")
-            st.caption(f"Technical details: {error_message}")
-            st.divider()
+    else:
+        st.warning(
+            "The AI returned an empty response. Please try again."
+        )
+
+except Exception as e:
+    error_message = str(e)
+
+    if "503" in error_message or "UNAVAILABLE" in error_message:
+        st.warning(
+            "Gemini is temporarily busy. Please wait a little and retry."
+        )
+
+    elif "429" in error_message or "RESOURCE_EXHAUSTED" in error_message:
+        st.warning(
+            "The AI request limit may have been reached. "
+            "Please try again later."
+        )
+
+    else:
+        st.error("Unable to generate a recommendation.")
+        st.caption(f"Technical details: {error_message}")
+
+st.divider()
+
