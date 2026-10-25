@@ -11,6 +11,7 @@ Celebration & Event Planner is an interactive web application designed to make o
 * 🎂 **Multiple Celebrations** — Plan special occasions according to your needs.
 * 💰 **Budget-Friendly Planning** — Organize your event based on your budget and preferences.
 * ✨ **Interactive User Interface** — Enjoy a modern and user-friendly experience.
+* ♿ **Accessibility support** — Keyboard-visible focus, reduced-motion support, and text alternatives for expense charts.
 * 🌐 **Live Web Application** — Access the application online through Streamlit Community Cloud.
 
 ## 🛠️ Technologies Used

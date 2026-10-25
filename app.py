@@ -18,6 +18,12 @@ from reportlab.platypus import (
     TableStyle
 )    
 
+st.set_page_config(
+    page_title="CelebrAI | Smart Event Planner",
+    page_icon="✨",
+    layout="wide"
+)
+
 client = get_gemini_client(st.secrets["GEMINI_API_KEY"])
 
 st.markdown(
@@ -64,138 +70,80 @@ st.markdown(
         text-align: center;
         min-height: 130px;
         margin-bottom: 12px;
+        background: #10091f;
     }
-    /* Accessibility improvements */
-:root {
-    --ink: #24183f;
-    --muted: #554766;
-}
 
-/* Make keyboard focus easy to see */
-*:focus-visible {
-    outline: 3px solid #4b237a !important;
-    outline-offset: 3px !important;
-}
-
-/* Improve contrast for secondary text */
-.small-note,
-.metric-label,
-.stCaption,
-[data-testid="stCaptionContainer"] {
-    color: #554766 !important;
-}
-
-/* Keep interactive controls easy to identify */
-.stButton > button:focus-visible,
-.stDownloadButton > button:focus-visible {
-    outline: 3px solid #24183f !important;
-    outline-offset: 3px !important;
-}
-
-/* Respect reduced-motion preferences */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
+    .celebrai-welcome-content {
+        padding: 16px;
+        border-radius: 16px;
+        background: #10091f;
     }
-}
- /* Accessible keyboard focus */
-*:focus-visible {
-    outline: 3px solid #24183f !important;
-    outline-offset: 3px !important;
-}
-
-/* Readable secondary text */
-.small-note,
-.metric-label,
-[data-testid="stCaptionContainer"] {
-    color: #554766 !important;
-}
-
-/* Clear focus indicators for buttons */
-.stButton > button:focus-visible,
-.stDownloadButton > button:focus-visible {
-    outline: 3px solid #24183f !important;
-    outline-offset: 3px !important;
-}
-
-/* Respect reduced-motion preferences */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
+    :root {
+        --ink: #24183f;
+        --muted: #e8dff2;
     }
-}
-/* Improve form label visibility */
-.stApp label,
-.stApp [data-testid="stWidgetLabel"] p,
-.stApp [data-testid="stWidgetLabel"] label {
-    color: #FFFFFF !important;
-    font-weight: 600 !important;
-}
 
-/* Make text inside input boxes readable */
-.stApp input,
-.stApp textarea,
-.stApp select {
-    color: #24183F !important;
-}
+    *:focus-visible {
+        outline: 3px solid #ffffff !important;
+        outline-offset: 3px !important;
+        box-shadow: 0 0 0 6px #24183f !important;
+    }
 
-/* Improve dropdown label visibility */
-.stApp [data-baseweb="select"] {
-    color: #24183F !important;
-}
+    .small-note,
+    .metric-label,
+    .stCaption,
+    [data-testid="stCaptionContainer"] {
+        color: #e8dff2 !important;
+    }
 
-/* Improve text area visibility */
-.stApp textarea {
-    background-color: #FFFFFF !important;
-    color: #24183F !important;
-}
+    .stApp label,
+    .stApp [data-testid="stWidgetLabel"] p,
+    .stApp [data-testid="stWidgetLabel"] label {
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+    }
 
-/* Improve dropdown and input backgrounds */
-.stApp input {
-    background-color: #FFFFFF !important;
-}
+    .stApp input,
+    .stApp textarea,
+    .stApp select {
+        color: #24183F !important;
+        background-color: #FFFFFF !important;
+    }
 
-/* Keep keyboard focus clearly visible */
-.stApp *:focus-visible {
-    outline: 3px solid #FFD166 !important;
-    outline-offset: 3px !important;
-}
-```css
-/* Make download buttons clearly visible */
-.stApp [data-testid="stDownloadButton"] > button {
-    background: linear-gradient(90deg, #FFD166, #FF8FAB) !important;
-    color: #24183F !important;
-    border: 2px solid #FFFFFF !important;
-    border-radius: 12px !important;
-    font-weight: 700 !important;
-    min-height: 48px !important;
-    width: 100% !important;
-    opacity: 1 !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
-}
+    .stApp [data-baseweb="select"] {
+        color: #24183F !important;
+    }
 
-.stApp [data-testid="stDownloadButton"] > button p,
-.stApp [data-testid="stDownloadButton"] > button span {
-    color: #24183F !important;
-    font-weight: 700 !important;
-}
+    .stApp [data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+        border: 2px solid #24183F !important;
+        border-radius: 12px !important;
+    }
 
-.stApp [data-testid="stDownloadButton"] > button:hover {
-    background: linear-gradient(90deg, #FFB703, #FF6FAE) !important;
-    color: #24183F !important;
-    border-color: #FFD166 !important;
-    transform: translateY(-2px);
-}
+    .stApp [data-testid="stDownloadButton"] > button {
+        background: linear-gradient(90deg, #FFD166, #FF8FAB) !important;
+        color: #24183F !important;
+        border: 2px solid #FFFFFF !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        min-height: 48px !important;
+        width: 100% !important;
+        opacity: 1 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    .stApp [data-testid="stDownloadButton"] > button p,
+    .stApp [data-testid="stDownloadButton"] > button span {
+        color: #24183F !important;
+        font-weight: 700 !important;
+    }
+
+    .stApp [data-testid="stDownloadButton"] > button:hover {
+        background: linear-gradient(90deg, #FFB703, #FF6FAE) !important;
+        color: #24183F !important;
+        border-color: #FFD166 !important;
+        transform: translateY(-2px);
+    }
 
     </style>
     """,
@@ -205,21 +153,23 @@ st.markdown(
 st.markdown(
     """
     <div class="celebrai-welcome">
-        <h1>✨ Welcome to CelebrAI ✨</h1>
+        <div class="celebrai-welcome-content">
+            <h1><span aria-hidden="true">✨</span> Welcome to CelebrAI <span aria-hidden="true">✨</span></h1>
         <p>Your celebration. Your imagination. Our AI.</p>
         <p>
             Plan beautiful events, manage your budget,
             create invitations and discover unforgettable themes.
         </p>
-        <div style="font-size: 30px; margin-top: 15px;">
+        <div aria-hidden="true" style="font-size: 30px; margin-top: 15px;">
             🎉 💜 🎂 💐 🎊
+        </div>
         </div>
     </div>
     """,
     unsafe_allow_html=True
 )
 
-st.subheader("🌟 Explore Your Celebration Studio")
+st.header("🌟 Explore Your Celebration Studio")
 
 feature_col1, feature_col2, feature_col3 = st.columns(3)
 
@@ -227,8 +177,8 @@ with feature_col1:
     st.markdown(
         """
         <div class="celebrai-feature">
-            <div style="font-size:32px;">🤖</div>
-            <h4>AI Event Planner</h4>
+            <div aria-hidden="true" style="font-size:32px;">🤖</div>
+            <h3>AI Event Planner</h3>
             <p>Discover personalized event ideas.</p>
         </div>
         """,
@@ -239,8 +189,8 @@ with feature_col2:
     st.markdown(
         """
         <div class="celebrai-feature">
-            <div style="font-size:32px;">💰</div>
-            <h4>Smart Budget</h4>
+            <div aria-hidden="true" style="font-size:32px;">💰</div>
+            <h3>Smart Budget</h3>
             <p>Track expenses and manage costs.</p>
         </div>
         """,
@@ -251,8 +201,8 @@ with feature_col3:
     st.markdown(
         """
         <div class="celebrai-feature">
-            <div style="font-size:32px;">💌</div>
-            <h4>Invitation Studio</h4>
+            <div aria-hidden="true" style="font-size:32px;">💌</div>
+            <h3>Invitation Studio</h3>
             <p>Create personalized invitations.</p>
         </div>
         """,
@@ -263,12 +213,6 @@ st.info(
     "💡 Tip: Scroll through CelebrAI to explore the AI planner, "
     "event checklist, countdown, invitation designer, "
     "expense tracker and theme gallery."
-)
-
-st.set_page_config(
-    page_title="CelebrAI | Smart Event Planner",
-    page_icon="✨",
-    layout="wide"
 )
 
 st.markdown("""
@@ -346,7 +290,7 @@ p, label, .stMarkdown, [data-testid="stMetricValue"] {
 }
 
 .hero::before {
-    content: "🥳   👑  ✨  🥂  🥳";
+    content: "";
     position: absolute;
     top: 12px;
     right: 15px;
@@ -359,6 +303,7 @@ p, label, .stMarkdown, [data-testid="stMetricValue"] {
     font-family: 'Pacifico', cursive;
     font-size: clamp(38px, 7vw, 68px);
     line-height: 1.4;
+    color: #ffd782;
     background: linear-gradient(
         90deg,#ffd782,#ff8fca,#b9a4ff,#ffd782
     );
@@ -433,8 +378,8 @@ div[data-testid="stMetric"]:hover {
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
 div[data-baseweb="textarea"] > div {
-    background-color: rgba(255,255,255,.07);
-    border: 1px solid var(--border);
+    background-color: #ffffff;
+    border: 2px solid #24183f;
     border-radius: 12px;
 }
 
@@ -453,10 +398,17 @@ hr {
         transition-duration: 0.01ms !important;
     }
 }
+
+@media (max-width: 640px) {
+    .celebrai-welcome,
+    .hero {
+        padding: 24px 16px;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 # Visual theme selector
-st.sidebar.title("🎨 Customize Your Experience")
+st.sidebar.header("🎨 Customize Your Experience")
 
 selected_theme = st.sidebar.selectbox(
     "Choose your theme",
@@ -552,7 +504,8 @@ for col, (emoji, name) in zip(
     with col:
         st.markdown(
             f'<div class="event-card">'
-            f'<h2>{emoji}</h2><b>{name}</b></div>',
+            f'<span aria-hidden="true" style="font-size:38px;">{emoji}</span>'
+            f'<p><strong>{name}</strong></p></div>',
             unsafe_allow_html=True
         )
 
@@ -601,7 +554,7 @@ theme = st.selectbox(
 
 st.metric("💎 Budget per guest", f"₹{budget / guests:,.0f}")
 
-st.write("### 💰 Live Budget Preview")
+st.write("#### 💰 Live Budget Preview")
 
 allocations = {
     "Venue": 0.25,
@@ -622,7 +575,7 @@ if st.button("✨ Generate My Dream Event", use_container_width=True):
 
     st.success("Your celebration concept is ready!")
 
-    st.markdown("## 👑 Your Event Preview")
+    st.markdown("### 👑 Your Event Preview")
 
     st.write(f"**Event:** {event_name or event_type}")
     st.write(f"**Type:** {event_type}")
@@ -674,8 +627,8 @@ st.markdown(
         padding: 30px;
         text-align: center;
     ">
-        <div style="font-size: 55px;">{visual['emoji']}</div>
-        <h2>{event_name or event_type}</h2>
+        <div aria-hidden="true" style="font-size: 55px;">{visual['emoji']}</div>
+        <h3>{event_name or event_type}</h3>
         <p>{visual['description']}</p>
         <p>📍 {location or 'Location not specified'}</p>
         <p>👥 {guests:,} guests</p>
@@ -1022,18 +975,6 @@ if st.button(
         width=2
     )
 
-    # Decorative top ornament
-    draw.text(
-        (width // 2, 105),
-        "✦  ❖  ✦",
-        font=ImageFont.truetype(
-            r"C:\Windows\Fonts\georgia.ttf", 35
-        ),
-        fill=colors["accent"],
-        anchor="mm"
-    )
-
-
     try:
         title_font = ImageFont.truetype(
             r"C:\Windows\Fonts\georgia.ttf", 62
@@ -1056,6 +997,17 @@ if st.button(
         heading_font = ImageFont.load_default()
         body_font = ImageFont.load_default()
         small_font = ImageFont.load_default()
+
+    for ornament_x in (460, 500, 540):
+        draw.polygon(
+            [
+                (ornament_x, 93),
+                (ornament_x + 12, 105),
+                (ornament_x, 117),
+                (ornament_x - 12, 105),
+            ],
+            fill=colors["accent"],
+        )
 
     def draw_centered(text, y, font, fill):
         bbox = draw.textbbox(
@@ -1131,7 +1083,7 @@ if st.button(
             line,
             message_y,
             body_font,
-            colors["black"]
+            colors["text"]
         )
         message_y += 43
 
@@ -1179,7 +1131,7 @@ if st.button(
         venue_y += 40
 
     draw_centered(
-        "✦  ✦  ✦",
+        "*  *  *",
         1010,
         heading_font,
         colors["accent"]
@@ -1216,7 +1168,12 @@ if st.button(
     st.image(
         png_data,
         caption="Your personalized CelebrAI invitation",
-        use_container_width=True
+        use_container_width=True,
+        alt=(
+            f"Invitation for {invite_title.strip() or 'Our Special Day'}, "
+            f"dated {invite_date.strftime('%d %B %Y')}, at "
+            f"{invite_location.strip() or 'venue to be announced'}."
+        ),
     )
 
     st.download_button(
@@ -1344,12 +1301,44 @@ if not edited_expenses.empty:
     chart_col1, chart_col2 = st.columns(2)
 
     with chart_col1:
-        st.write("**Spending by Category**")
-        st.bar_chart(expense_summary.category_totals)
+        st.markdown("#### Actual spending by category")
+        st.bar_chart(
+            expense_summary.category_totals,
+            alt="Bar chart of actual spending totals for each expense category.",
+        )
+        category_table = (
+            expense_summary.category_totals
+            .rename("Actual Cost (₹)")
+            .rename_axis("Category")
+            .reset_index()
+        )
+        st.dataframe(
+            category_table,
+            hide_index=True,
+            height="content",
+            width="stretch",
+            alt="Actual expense totals by category, in Indian rupees.",
+        )
 
     with chart_col2:
-        st.write("**Estimated vs Actual Costs**")
-        st.bar_chart(expense_summary.comparison)
+        st.markdown("#### Estimated and actual costs by expense")
+        st.bar_chart(
+            expense_summary.comparison,
+            alt=(
+                "Bar chart comparing estimated and actual costs "
+                "for each expense."
+            ),
+        )
+        st.dataframe(
+            expense_summary.comparison.rename_axis("Expense").reset_index(),
+            hide_index=True,
+            height="content",
+            width="stretch",
+            alt=(
+                "Table comparing estimated and actual costs "
+                "for each expense, in Indian rupees."
+            ),
+        )
 
 st.caption(
     "✨ CelebrAI helps you plan beautiful celebrations without losing track of your budget."
@@ -1426,22 +1415,28 @@ st.markdown(
         box-shadow: 0 10px 35px rgba(0,0,0,0.25);
         border: 1px solid rgba(255,255,255,0.3);
     ">
-        <div style="font-size: 38px; margin-bottom: 18px;">
+        <div aria-hidden="true" style="font-size: 38px; margin-bottom: 18px;">
             {selected_theme_data['decor']}
         </div>
-        <h1 style="
+        <div style="
+            background: rgba(0, 0, 0, 0.68);
+            border-radius: 16px;
+            padding: 20px 16px;
+        ">
+        <h3 style="
             color: white;
             font-family: Georgia, serif;
             letter-spacing: 2px;
             font-size: 30px;
         ">
             {selected_theme_data['heading']}
-        </h1>
+        </h3>
         <p style="font-size: 17px;">
             {selected_theme_data['description']}
         </p>
         <div style="font-size: 24px; margin-top: 22px;">
             ✨ YOUR SPECIAL MOMENT STARTS HERE ✨
+        </div>
         </div>
     </div>
     """,
