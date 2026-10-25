@@ -84,9 +84,13 @@ The application will open in your browser.
 ```text
 event-planner/
 ├── app.py
+├── app_resources.py
+├── expense_utils.py
 ├── requirements.txt
 ├── README.md
-└── .gitignore
+├── .gitignore
+└── tests/
+    └── test_app.py
 ```
 
 *Note: Your actual project may contain additional files and folders.*

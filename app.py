@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-from google import genai
-import os
 from datetime import date
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import textwrap
+from app_resources import get_gemini_client
+from expense_utils import calculate_expense_summary
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -18,9 +18,7 @@ from reportlab.platypus import (
     TableStyle
 )    
 
-api_key = st.secrets["GEMINI_API_KEY"]
-
-client = genai.Client(api_key=api_key)
+client = get_gemini_client(st.secrets["GEMINI_API_KEY"])
 
 st.markdown(
     """
@@ -1292,10 +1290,10 @@ edited_expenses = st.data_editor(
 
 st.session_state.event_expenses = edited_expenses
 
-estimated_total = edited_expenses["Estimated Cost (₹)"].fillna(0).sum()
-actual_total = edited_expenses["Actual Cost (₹)"].fillna(0).sum()
-
-remaining_budget = expense_budget - actual_total
+expense_summary = calculate_expense_summary(edited_expenses, expense_budget)
+estimated_total = expense_summary.estimated_total
+actual_total = expense_summary.actual_total
+remaining_budget = expense_summary.remaining_budget
 
 metric1, metric2, metric3 = st.columns(3)
 
@@ -1324,9 +1322,8 @@ if actual_total > expense_budget:
 else:
     st.success("🎉 Great! Your spending is within your budget.")
 
-# Budget usage and remaining balance
+# Budget usage
 progress = min(actual_total / expense_budget, 1.0)
-remaining_budget = expense_budget - actual_total
 
 st.progress(
     progress,
@@ -1344,29 +1341,15 @@ else:
 st.subheader("📊 Expense Analytics")
 
 if not edited_expenses.empty:
-    chart_data = edited_expenses.copy()
-
-    chart_data["Actual Cost (₹)"] = (
-        chart_data["Actual Cost (₹)"].fillna(0)
-    )
-
-    category_totals = chart_data.groupby("Category")[
-        "Actual Cost (₹)"
-    ].sum()
-
     chart_col1, chart_col2 = st.columns(2)
 
     with chart_col1:
         st.write("**Spending by Category**")
-        st.bar_chart(category_totals)
+        st.bar_chart(expense_summary.category_totals)
 
     with chart_col2:
         st.write("**Estimated vs Actual Costs**")
-        comparison = chart_data.set_index("Expense")[
-            ["Estimated Cost (₹)", "Actual Cost (₹)"]
-        ].fillna(0)
-
-        st.bar_chart(comparison)
+        st.bar_chart(expense_summary.comparison)
 
 st.caption(
     "✨ CelebrAI helps you plan beautiful celebrations without losing track of your budget."
@@ -1673,12 +1656,20 @@ if st.button(
     if "event_expenses" in st.session_state:
         current_expenses = st.session_state.event_expenses
 
-        for _, row in current_expenses.iterrows():
+        expense_columns = [
+            "Expense",
+            "Category",
+            "Estimated Cost (₹)",
+            "Actual Cost (₹)",
+        ]
+        for expense, category, estimated, actual in current_expenses[
+            expense_columns
+        ].itertuples(index=False, name=None):
             expense_data.append([
-                str(row.get("Expense", "")),
-                str(row.get("Category", "")),
-                f"{float(row.get('Estimated Cost (₹)', 0) or 0):,.2f}",
-                f"{float(row.get('Actual Cost (₹)', 0) or 0):,.2f}"
+                "" if pd.isna(expense) else str(expense),
+                "" if pd.isna(category) else str(category),
+                f"{0 if pd.isna(estimated) else float(estimated):,.2f}",
+                f"{0 if pd.isna(actual) else float(actual):,.2f}",
             ])
     else:
         expense_data.append(["No expenses entered", "-", "-", "-"])
