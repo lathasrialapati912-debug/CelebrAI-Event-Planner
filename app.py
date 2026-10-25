@@ -67,8 +67,145 @@ st.markdown(
         min-height: 130px;
         margin-bottom: 12px;
     }
-    </style>
+    /* Accessibility improvements */
+:root {
+    --ink: #24183f;
+    --muted: #554766;
+}
 
+/* Make keyboard focus easy to see */
+*:focus-visible {
+    outline: 3px solid #4b237a !important;
+    outline-offset: 3px !important;
+}
+
+/* Improve contrast for secondary text */
+.small-note,
+.metric-label,
+.stCaption,
+[data-testid="stCaptionContainer"] {
+    color: #554766 !important;
+}
+
+/* Keep interactive controls easy to identify */
+.stButton > button:focus-visible,
+.stDownloadButton > button:focus-visible {
+    outline: 3px solid #24183f !important;
+    outline-offset: 3px !important;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+ /* Accessible keyboard focus */
+*:focus-visible {
+    outline: 3px solid #24183f !important;
+    outline-offset: 3px !important;
+}
+
+/* Readable secondary text */
+.small-note,
+.metric-label,
+[data-testid="stCaptionContainer"] {
+    color: #554766 !important;
+}
+
+/* Clear focus indicators for buttons */
+.stButton > button:focus-visible,
+.stDownloadButton > button:focus-visible {
+    outline: 3px solid #24183f !important;
+    outline-offset: 3px !important;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+/* Improve form label visibility */
+.stApp label,
+.stApp [data-testid="stWidgetLabel"] p,
+.stApp [data-testid="stWidgetLabel"] label {
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+}
+
+/* Make text inside input boxes readable */
+.stApp input,
+.stApp textarea,
+.stApp select {
+    color: #24183F !important;
+}
+
+/* Improve dropdown label visibility */
+.stApp [data-baseweb="select"] {
+    color: #24183F !important;
+}
+
+/* Improve text area visibility */
+.stApp textarea {
+    background-color: #FFFFFF !important;
+    color: #24183F !important;
+}
+
+/* Improve dropdown and input backgrounds */
+.stApp input {
+    background-color: #FFFFFF !important;
+}
+
+/* Keep keyboard focus clearly visible */
+.stApp *:focus-visible {
+    outline: 3px solid #FFD166 !important;
+    outline-offset: 3px !important;
+}
+```css
+/* Make download buttons clearly visible */
+.stApp [data-testid="stDownloadButton"] > button {
+    background: linear-gradient(90deg, #FFD166, #FF8FAB) !important;
+    color: #24183F !important;
+    border: 2px solid #FFFFFF !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    min-height: 48px !important;
+    width: 100% !important;
+    opacity: 1 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.stApp [data-testid="stDownloadButton"] > button p,
+.stApp [data-testid="stDownloadButton"] > button span {
+    color: #24183F !important;
+    font-weight: 700 !important;
+}
+
+.stApp [data-testid="stDownloadButton"] > button:hover {
+    background: linear-gradient(90deg, #FFB703, #FF6FAE) !important;
+    color: #24183F !important;
+    border-color: #FFD166 !important;
+    transform: translateY(-2px);
+}
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
     <div class="celebrai-welcome">
         <h1>✨ Welcome to CelebrAI ✨</h1>
         <p>Your celebration. Your imagination. Our AI.</p>
@@ -211,7 +348,7 @@ p, label, .stMarkdown, [data-testid="stMetricValue"] {
 }
 
 .hero::before {
-    content: "✦     ✧        ✦        ✧     ✦";
+    content: "🥳   👑  ✨  🥂  🥳";
     position: absolute;
     top: 12px;
     right: 15px;
@@ -496,11 +633,6 @@ if st.button("✨ Generate My Dream Event", use_container_width=True):
     st.write(f"**Theme:** {theme}")
     st.write(f"**Total budget:** ₹{budget:,.0f}")
 
-    st.info(
-        "This is your initial event preview. "
-        "Next, we'll connect Gemini AI to generate "
-        "personalized ideas, schedules and recommendations."
-    )
 st.divider()
 
 st.header("🎨 Your Celebration Preview")
@@ -698,10 +830,6 @@ if st.button("✨ Generate My AI Event Plan", use_container_width=True):
             st.error("We couldn't generate your AI event plan.")
             st.caption(f"Technical details: {error_message}")
 
-# =====================================
-# EVENT COUNTDOWN
-# =====================================
-
 st.divider()
 
 st.header("⏳ Your Celebration Countdown")
@@ -784,7 +912,6 @@ if days_left > 0:
 
 elif days_left == 0:
 
-    st.balloons()
 
     st.success(
         "🎉🎂 TODAY IS YOUR SPECIAL DAY! "
@@ -871,50 +998,59 @@ if st.button(
     "✨ Create My Invitation",
     use_container_width=True
 ):
-
     colors = invitation_themes[invite_style]
 
     width, height = 1000, 1200
 
+    # Create a transparent canvas for the invitation
     image = Image.new(
-        "RGB",
+        "RGBA",
         (width, height),
-        colors["background"]
+        (0, 0, 0, 0)
     )
 
     draw = ImageDraw.Draw(image)
-
-    # Decorative border
-    draw.rounded_rectangle(
-        (35, 35, 965, 1165),
-        radius=35,
+    draw.ellipse(
+        (45, 25, 955, 1175),
+        fill=colors["background"],
         outline=colors["accent"],
-        width=5
+        width=7
     )
 
-    draw.rounded_rectangle(
-        (55, 55, 945, 1145),
-        radius=30,
+    # Inner decorative oval border
+    draw.ellipse(
+        (65, 45, 935, 1155),
         outline=colors["accent"],
         width=2
     )
 
-    # Load fonts
+    # Decorative top ornament
+    draw.text(
+        (width // 2, 105),
+        "✦  ❖  ✦",
+        font=ImageFont.truetype(
+            r"C:\Windows\Fonts\georgia.ttf", 35
+        ),
+        fill=colors["accent"],
+        anchor="mm"
+    )
+
+
     try:
         title_font = ImageFont.truetype(
-            r"C:\Windows\Fonts\georgia.ttf", 64
+            r"C:\Windows\Fonts\georgia.ttf", 62
         )
 
         heading_font = ImageFont.truetype(
-            r"C:\Windows\Fonts\georgiab.ttf", 40
+            r"C:\Windows\Fonts\georgiab.ttf", 34
         )
 
         body_font = ImageFont.truetype(
-            r"C:\Windows\Fonts\arial.ttf", 30
+            r"C:\Windows\Fonts\arial.ttf", 27
         )
 
         small_font = ImageFont.truetype(
-            r"C:\Windows\Fonts\arial.ttf", 25
+            r"C:\Windows\Fonts\arial.ttf", 22
         )
 
     except OSError:
@@ -923,9 +1059,13 @@ if st.button(
         body_font = ImageFont.load_default()
         small_font = ImageFont.load_default()
 
-    # Helper: centre text horizontally
     def draw_centered(text, y, font, fill):
-        bbox = draw.textbbox((0, 0), text, font=font)
+        bbox = draw.textbbox(
+            (0, 0),
+            text,
+            font=font
+        )
+
         text_width = bbox[2] - bbox[0]
 
         draw.text(
@@ -935,84 +1075,101 @@ if st.button(
             fill=fill
         )
 
-    # Decorative symbols
-    draw_centered("*  *  *  *  *", 100, heading_font,
-                  colors["accent"])
-
     draw_centered(
-        "YOU ARE INVITED",
-        200,
-        body_font,
-        colors["text"]
-    )
-
-    draw_centered(
-        invite_title[:35],
-        300,
-        title_font,
-        colors["accent"]
-    )
-
-    draw_centered(
-        "A SPECIAL CELEBRATION",
-        420,
+        "YOU ARE CORDIALLY INVITED",
+        165,
         small_font,
         colors["text"]
     )
 
+    draw_centered(
+        "A SPECIAL CELEBRATION",
+        220,
+        heading_font,
+        colors["accent"]
+    )
+
+    # Decorative divider
     draw.line(
-        (200, 485, 800, 485),
+        (300, 285, 700, 285),
         fill=colors["accent"],
         width=3
     )
 
-    # Invitation message
-    message_lines = textwrap.wrap(
-        invite_message,
-        width=42
-    )[:5]
+    title_lines = textwrap.wrap(
+        invite_title.strip() or "Our Special Day",
+        width=23
+    )[:2]
 
-    y = 530
+    title_y = 320
+
+    for line in title_lines:
+        draw_centered(
+            line,
+            title_y,
+            title_font,
+            colors["accent"]
+        )
+        title_y += 75
+
+
+    draw_centered(
+        "PLEASE JOIN US FOR",
+        465,
+        small_font,
+        colors["text"]
+    )
+
+    message_lines = textwrap.wrap(
+        invite_message.strip() or
+        "Join us for a wonderful celebration filled with happiness and beautiful memories.",
+        width=43
+    )[:4]
+
+    message_y = 510
 
     for line in message_lines:
         draw_centered(
             line,
-            y,
+            message_y,
             body_font,
-            colors["text"]
+            colors["black"]
         )
-        y += 48
+        message_y += 43
 
-    # Event details
-    y += 45
+    draw.line(
+        (350, 705, 650, 705),
+        fill=colors["accent"],
+        width=2
+    )
 
     draw_centered(
         "DATE",
-        y,
+        730,
         heading_font,
         colors["accent"]
     )
 
     draw_centered(
         invite_date.strftime("%d %B %Y"),
-        y + 55,
+        780,
         body_font,
         colors["text"]
     )
 
     draw_centered(
         "VENUE",
-        y + 125,
+        840,
         heading_font,
         colors["accent"]
     )
 
     venue_lines = textwrap.wrap(
-        invite_location or "Venue to be announced",
-        width=40
+        invite_location.strip() or "Venue to be announced",
+        width=35
     )[:2]
 
-    venue_y = y + 180
+    venue_y = 890
 
     for line in venue_lines:
         draw_centered(
@@ -1021,43 +1178,57 @@ if st.button(
             body_font,
             colors["text"]
         )
-        venue_y += 45
+        venue_y += 40
 
     draw_centered(
-        "WE LOOK FORWARD TO CELEBRATING WITH YOU!",
-        1020,
-        small_font,
+        "✦  ✦  ✦",
+        1010,
+        heading_font,
         colors["accent"]
     )
 
     draw_centered(
-        "MADE WITH CELEBRAI",
-        1080,
+        "WE LOOK FORWARD TO CELEBRATING WITH YOU!",
+        1055,
         small_font,
         colors["text"]
     )
 
-    # Convert image to PNG bytes
+    draw_centered(
+        "MADE WITH CELEBRAI",
+        1100,
+        small_font,
+        colors["accent"]
+    )
+
+
     image_bytes = BytesIO()
-    image.save(image_bytes, format="PNG")
+
+    image.save(
+        image_bytes,
+        format="PNG"
+    )
 
     png_data = image_bytes.getvalue()
 
-    st.success("Your invitation is ready!")
+    st.success(
+        "✨ Your beautiful invitation is ready!"
+    )
 
     st.image(
         png_data,
-        caption="Your personalised CelebrAI invitation",
+        caption="Your personalized CelebrAI invitation",
         use_container_width=True
     )
 
     st.download_button(
-        label="📥 Download Invitation as PNG",
+        label="📥 Download Your Invitation",
         data=png_data,
         file_name="CelebrAI_Invitation.png",
         mime="image/png",
         use_container_width=True
     )
+
     st.divider()
 
 st.header("💰 Smart Event Expense Tracker")
@@ -1153,8 +1324,22 @@ if actual_total > expense_budget:
 else:
     st.success("🎉 Great! Your spending is within your budget.")
 
+# Budget usage and remaining balance
 progress = min(actual_total / expense_budget, 1.0)
-st.progress(progress, text=f"{progress * 100:.1f}% of your budget used")
+remaining_budget = expense_budget - actual_total
+
+st.progress(
+    progress,
+    text=f"{progress * 100:.1f}% of your budget used"
+)
+
+if remaining_budget > 0:
+    st.caption(f"💚 Remaining budget: ₹{remaining_budget:,.0f}")
+elif remaining_budget == 0:
+    st.warning("⚠️ Your entire budget has been used.")
+else:
+    st.error(f"🚨 You exceeded your budget by ₹{abs(remaining_budget):,.0f}.")
+
 
 st.subheader("📊 Expense Analytics")
 
@@ -1625,53 +1810,52 @@ if st.button(
     Use clear headings, friendly language, and attractive formatting.
     """
 
+    try:
+        with st.spinner(
+            "✨ CelebrAI is designing your perfect celebration..."
+        ):
+            recommendation_response = client.models.generate_content(
+                model="gemini-3.5-flash-lite",
+                contents=recommendation_prompt
+            )
 
-try:
-    with st.spinner(
-        "✨ CelebrAI is designing your perfect celebration..."
-    ):
-        recommendation_response = client.models.generate_content(
-            model="gemini-3.5-flash-lite",
-            contents=recommendation_prompt
-        )
+        if recommendation_response.text:
+            recommendation_text = recommendation_response.text
 
-    if recommendation_response.text:
-        recommendation_text = recommendation_response.text
+            st.success("🎉 Your personalized theme recommendation is ready!")
+            st.markdown(recommendation_text)
 
-        st.success("🎉 Your personalized theme recommendation is ready!")
-        st.markdown(recommendation_text)
+            st.download_button(
+                "📥 Download Theme Recommendation",
+                data=recommendation_text,
+                file_name="CelebrAI_Theme_Recommendation.txt",
+                mime="text/plain",
+                use_container_width=True,
+                key="download_theme_recommendation"
+            )
 
-        st.download_button(
-            "📥 Download Theme Recommendation",
-            data=recommendation_text,
-            file_name="CelebrAI_Theme_Recommendation.txt",
-            mime="text/plain",
-            use_container_width=True,
-            key="download_theme_recommendation"
-        )
+        else:
+            st.warning(
+                "The AI returned an empty response. Please try again."
+            )
 
-    else:
-        st.warning(
-            "The AI returned an empty response. Please try again."
-        )
+    except Exception as e:
+        error_message = str(e)
 
-except Exception as e:
-    error_message = str(e)
+        if "503" in error_message or "UNAVAILABLE" in error_message:
+            st.warning(
+                "We couldn't generate your AI plan right now. "
+                "Please try again or use the built-in planner."
+            )
 
-    if "503" in error_message or "UNAVAILABLE" in error_message:
-        st.warning(
-            "Gemini is temporarily busy. Please wait a little and retry."
-        )
+        elif "429" in error_message or "RESOURCE_EXHAUSTED" in error_message:
+            st.warning(
+                "The AI request limit may have been reached. "
+                "Please try again later."
+            )
 
-    elif "429" in error_message or "RESOURCE_EXHAUSTED" in error_message:
-        st.warning(
-            "The AI request limit may have been reached. "
-            "Please try again later."
-        )
+        else:
+            st.error("Unable to generate a recommendation.")
+            st.caption(f"Technical details: {error_message}")
 
-    else:
-        st.error("Unable to generate a recommendation.")
-        st.caption(f"Technical details: {error_message}")
-
-st.divider()
-
+        st.divider()
