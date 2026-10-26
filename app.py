@@ -4,8 +4,11 @@ from datetime import date
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import textwrap
+from xml.sax.saxutils import escape
+from streamlit.errors import StreamlitSecretNotFoundError
 from app_resources import get_gemini_client
 from expense_utils import calculate_expense_summary
+from translations import LANGUAGES, t, translate
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -24,7 +27,10 @@ st.set_page_config(
     layout="wide"
 )
 
-client = get_gemini_client(st.secrets["GEMINI_API_KEY"])
+
+def clear_expense_editor_state():
+    st.session_state.pop("expense_editor", None)
+
 
 st.markdown(
     """
@@ -150,15 +156,30 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+_, language_col = st.columns([4, 1])
+with language_col:
+    selected_language = st.selectbox(
+        t("language_label"),
+        list(LANGUAGES),
+        index=0,
+        key="celebrai_language",
+        on_change=clear_expense_editor_state,
+    )
+
+if LANGUAGES[selected_language] == "ar":
+    st.markdown(
+        "<style>.stApp { direction: rtl; }</style>",
+        unsafe_allow_html=True,
+    )
+
 st.markdown(
-    """
+    f"""
     <div class="celebrai-welcome">
         <div class="celebrai-welcome-content">
-            <h1><span aria-hidden="true">✨</span> Welcome to CelebrAI <span aria-hidden="true">✨</span></h1>
-        <p>Your celebration. Your imagination. Our AI.</p>
+            <h1><span aria-hidden="true">✨</span> {t("welcome_title")} <span aria-hidden="true">✨</span></h1>
+        <p>{t("welcome_tagline")}</p>
         <p>
-            Plan beautiful events, manage your budget,
-            create invitations and discover unforgettable themes.
+            {t("welcome_intro")}
         </p>
         <div aria-hidden="true" style="font-size: 30px; margin-top: 15px;">
             🎉 💜 🎂 💐 🎊
@@ -169,17 +190,17 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.header("🌟 Explore Your Celebration Studio")
+st.header(f"🌟 {t('studio_title')}")
 
 feature_col1, feature_col2, feature_col3 = st.columns(3)
 
 with feature_col1:
     st.markdown(
-        """
+        f"""
         <div class="celebrai-feature">
             <div aria-hidden="true" style="font-size:32px;">🤖</div>
-            <h3>AI Event Planner</h3>
-            <p>Discover personalized event ideas.</p>
+            <h3>{t("feature_ai")}</h3>
+            <p>{t("feature_ai_desc")}</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -187,11 +208,11 @@ with feature_col1:
 
 with feature_col2:
     st.markdown(
-        """
+        f"""
         <div class="celebrai-feature">
             <div aria-hidden="true" style="font-size:32px;">💰</div>
-            <h3>Smart Budget</h3>
-            <p>Track expenses and manage costs.</p>
+            <h3>{t("feature_budget")}</h3>
+            <p>{t("feature_budget_desc")}</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -199,20 +220,18 @@ with feature_col2:
 
 with feature_col3:
     st.markdown(
-        """
+        f"""
         <div class="celebrai-feature">
             <div aria-hidden="true" style="font-size:32px;">💌</div>
-            <h3>Invitation Studio</h3>
-            <p>Create personalized invitations.</p>
+            <h3>{t("feature_invitation")}</h3>
+            <p>{t("feature_invitation_desc")}</p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
 st.info(
-    "💡 Tip: Scroll through CelebrAI to explore the AI planner, "
-    "event checklist, countdown, invitation designer, "
-    "expense tracker and theme gallery."
+    f"💡 {t('tip')}"
 )
 
 st.markdown("""
@@ -405,20 +424,136 @@ hr {
         padding: 24px 16px;
     }
 }
+
+.stApp {
+    color: #f8f5fb;
+    font-family: 'Outfit', 'Segoe UI', sans-serif;
+    animation: none;
+}
+
+.celebrai-welcome {
+    padding: clamp(20px, 4vw, 36px) 20px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: none;
+    animation: none;
+}
+
+.celebrai-welcome-content {
+    padding: 12px;
+    background: transparent;
+}
+
+h1, h2, h3, h4 {
+    color: var(--celebrai-accent, #ffd782) !important;
+}
+
+.hero {
+    padding: clamp(24px, 5vw, 48px) 22px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: none;
+    animation: none;
+}
+
+.hero-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(36px, 6vw, 58px);
+    line-height: 1.2;
+    color: var(--celebrai-accent, #ffd782);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    animation: none;
+}
+
+.event-card,
+.celebrai-feature,
+div[data-testid="stMetric"] {
+    min-height: auto;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: none;
+    backdrop-filter: none;
+    animation: none;
+}
+
+.event-card {
+    padding: 18px 12px;
+}
+
+.event-card:hover,
+div[data-testid="stMetric"]:hover {
+    transform: none;
+    border-color: var(--celebrai-accent, #ffd782);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+div.stButton > button,
+.stApp [data-testid="stDownloadButton"] > button {
+    min-height: 44px;
+    border: 1px solid var(--celebrai-accent, #ffd782);
+    border-radius: 10px;
+    background: var(--celebrai-accent, #ffd782);
+    color: #21102e;
+    box-shadow: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+div.stButton > button:hover,
+.stApp [data-testid="stDownloadButton"] > button:hover {
+    transform: none;
+    border-color: #ffffff;
+    box-shadow: none;
+}
+
+div[data-testid="stMetric"] {
+    padding: 16px;
+}
+
+div[data-testid="stVerticalBlock"] > div {
+    animation: none;
+}
+
+*:focus-visible {
+    outline: 3px solid var(--celebrai-accent, #ffd782) !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 2px #21102e !important;
+}
+
+@media (max-width: 640px) {
+    .event-card {
+        padding: 14px 8px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 # Visual theme selector
-st.sidebar.header("🎨 Customize Your Experience")
+st.sidebar.header(f"🎨 {t('customize_experience')}")
 
+theme_option_labels = {
+    "Royal Purple": "theme_option_royal_purple",
+    "Rose Gold": "theme_option_rose_gold",
+    "Ocean Dream": "theme_option_ocean_dream",
+    "Emerald Elegance": "theme_option_emerald_elegance",
+    "Midnight Galaxy": "theme_option_midnight_galaxy",
+}
 selected_theme = st.sidebar.selectbox(
-    "Choose your theme",
-    [
-        "Royal Purple",
-        "Rose Gold",
-        "Ocean Dream",
-        "Emerald Elegance",
-        "Midnight Galaxy"
-    ]
+    t("choose_theme"),
+    list(theme_option_labels),
+    format_func=lambda option: translate(
+        theme_option_labels[option], selected_language
+    ),
+    key="theme_selector",
 )
 
 theme_settings = {
@@ -440,22 +575,30 @@ st.markdown(
             {secondary_color}20,
             transparent 45%
         ), {bg_color};
+        animation: none;
+        --celebrai-accent: {accent_color};
+        --celebrai-secondary: {secondary_color};
     }}
     h1, h2, h3 {{
-        color: {accent_color} !important;
+        color: var(--celebrai-accent) !important;
     }}
     </style>
     """,
     unsafe_allow_html=True
 )
+font_option_labels = {
+    "Modern": "font_option_modern",
+    "Elegant": "font_option_elegant",
+    "Playful": "font_option_playful",
+    "Futuristic": "font_option_futuristic",
+}
 font_choice = st.sidebar.selectbox(
-    "Choose your typography",
-    [
-        "Modern",
-        "Elegant",
-        "Playful",
-        "Futuristic"
-    ]
+    t("choose_typography"),
+    list(font_option_labels),
+    format_func=lambda option: translate(
+        font_option_labels[option], selected_language
+    ),
+    key="font_selector",
 )
 
 font_settings = {
@@ -477,84 +620,123 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-st.markdown("""
+
+st.sidebar.markdown(f"### {t('quick_navigation')}")
+for section_label, section_anchor in [
+    (t("preview_title"), "celebration-preview"),
+    (t("timeline"), "preparation-timeline"),
+    (t("download_plan"), "download-event-plan"),
+    (t("ai_planner"), "ai-event-planner"),
+    (t("countdown"), "celebration-countdown"),
+    (t("invitation"), "invitation-studio"),
+    (t("expense_tracker"), "expense-tracker"),
+    (t("theme_gallery"), "theme-gallery"),
+    (t("professional_plan"), "professional-event-plan"),
+    (t("theme_recommendations"), "ai-theme-recommendations"),
+]:
+    st.sidebar.markdown(f"[{section_label}](#{section_anchor})")
+
+st.markdown(f"""
 <div class="hero">
-    <div class="hero-title">✨ CelebrAI</div>
-    <h3>Every Celebration Deserves a Little Magic</h3>
-    <p>Design unforgettable moments with your personal AI event planner.</p>
+    <div class="hero-title">{t("hero_title")}</div>
+    <h3>{t("hero_subtitle")}</h3>
+    <p>{t("hero_description")}</p>
 </div>
 """, unsafe_allow_html=True)
 
 st.write("")
 
-st.subheader("🎊 Choose Your Celebration")
+st.subheader(f"🎊 {t('choose_celebration')}")
 
 col1, col2, col3, col4 = st.columns(4)
 
+event_type_labels = {
+    "Wedding": "option_wedding",
+    "Birthday": "option_birthday",
+    "College Fest": "option_college_fest",
+    "Anniversary": "option_anniversary",
+    "Community Celebration": "option_community",
+}
 events = [
-    ("💍", "Wedding"),
-    ("🎂", "Birthday"),
-    ("🎓", "College Fest"),
-    ("🎉", "Anniversary")
+    ("💍", "Wedding", "event_card_wedding"),
+    ("🎂", "Birthday", "event_card_birthday"),
+    ("🎓", "College Fest", "event_card_college"),
+    ("🎉", "Anniversary", "event_card_anniversary"),
 ]
 
-for col, (emoji, name) in zip(
+for col, (emoji, name, label_key) in zip(
     [col1, col2, col3, col4], events
 ):
     with col:
         st.markdown(
             f'<div class="event-card">'
             f'<span aria-hidden="true" style="font-size:38px;">{emoji}</span>'
-            f'<p><strong>{name}</strong></p></div>',
+            f'<p><strong>{t(label_key)}</strong></p></div>',
             unsafe_allow_html=True
         )
 
 st.write("")
 st.divider()
 
-st.subheader("💫 Design Your Dream Event")
+st.subheader(f"💫 {t('design_event')}")
 
 event_type = st.selectbox(
-    "What are you celebrating?",
-    ["Wedding", "Birthday", "College Fest", "Anniversary",
-     "Community Celebration"]
+    t("event_type"),
+    list(event_type_labels),
+    format_func=lambda option: translate(
+        event_type_labels[option], selected_language
+    ),
+    key="event_type",
 )
 
 event_name = st.text_input(
-    "Event name",
-    placeholder="e.g. My Dream Birthday"
+    t("event_name"),
+    placeholder=t("event_name_placeholder"),
+    key="event_name",
 )
 
 location = st.text_input(
-    "Event location",
-    placeholder="e.g. Chennai"
+    t("location"),
+    placeholder=t("location_placeholder"),
+    key="event_location",
 )
 
 budget = st.slider(
-    "💰 Your budget (₹)",
+    f"💰 {t('budget')}",
     min_value=5000,
     max_value=500000,
     value=50000,
-    step=5000
+    step=5000,
+    key="event_budget",
 )
 
 guests = st.number_input(
-    "👥 Number of guests",
+    f"👥 {t('guest_count')}",
     min_value=1,
     max_value=10000,
-    value=100
+    value=100,
+    key="event_guest_count",
 )
 
+event_vibe_labels = {
+    "Royal & Luxurious": "option_royal",
+    "Traditional Indian": "option_traditional",
+    "Elegant & Minimal": "option_minimal",
+    "Colorful & Fun": "option_colorful",
+    "Modern & Futuristic": "option_futuristic",
+}
 theme = st.selectbox(
-    "🎨 Choose your vibe",
-    ["Royal & Luxurious", "Traditional Indian",
-     "Elegant & Minimal", "Colorful & Fun",
-     "Modern & Futuristic"]
+    f"🎨 {t('event_vibe')}",
+    list(event_vibe_labels),
+    format_func=lambda option: translate(
+        event_vibe_labels[option], selected_language
+    ),
+    key="event_theme",
 )
 
-st.metric("💎 Budget per guest", f"₹{budget / guests:,.0f}")
+st.metric(f"💎 {t('budget_per_guest')}", f"₹{budget / guests:,.0f}")
 
-st.write("#### 💰 Live Budget Preview")
+st.write(f"#### 💰 {t('live_budget')}")
 
 allocations = {
     "Venue": 0.25,
@@ -564,156 +746,161 @@ allocations = {
     "Entertainment": 0.10,
     "Miscellaneous": 0.10
 }
+allocation_labels = {
+    "Venue": "budget_venue",
+    "Catering": "budget_catering",
+    "Decoration": "budget_decoration",
+    "Photography": "budget_photography",
+    "Entertainment": "budget_entertainment",
+    "Miscellaneous": "budget_miscellaneous",
+}
 
 for category, percentage in allocations.items():
     amount = budget * percentage
-    st.write(f"**{category}** — ₹{amount:,.0f}")
+    st.write(f"**{t(allocation_labels[category])}** — ₹{amount:,.0f}")
     st.progress(percentage)
 
-if st.button("✨ Generate My Dream Event", use_container_width=True):
+if st.button(f"✨ {t('generate_event')}", width="stretch"):
     st.balloons()
 
-    st.success("Your celebration concept is ready!")
+    st.success(t("concept_ready"))
 
-    st.markdown("### 👑 Your Event Preview")
+    st.markdown(f"### 👑 {t('preview_title')}")
 
-    st.write(f"**Event:** {event_name or event_type}")
-    st.write(f"**Type:** {event_type}")
-    st.write(f"**Location:** {location or 'Not specified'}")
-    st.write(f"**Guests:** {guests}")
-    st.write(f"**Theme:** {theme}")
-    st.write(f"**Total budget:** ₹{budget:,.0f}")
+    st.write(
+        f"**{t('event_name')}:** "
+        f"{event_name or t(event_type_labels[event_type])}"
+    )
+    st.write(
+        f"**{t('event_type')}:** {t(event_type_labels[event_type])}"
+    )
+    st.write(
+        f"**{t('event_location')}:** {location or t('not_specified')}"
+    )
+    st.write(f"**{t('guests')}:** {guests}")
+    st.write(f"**{t('event_vibe')}:** {t(event_vibe_labels[theme])}")
+    st.write(f"**{t('total_budget')}:** ₹{budget:,.0f}")
 
 st.divider()
 
-st.header("🎨 Your Celebration Preview")
+st.header(f"🎨 {t('preview_title')}", anchor="celebration-preview")
 
 theme_visuals = {
     "Royal & Luxurious": {
         "emoji": "👑",
-        "description": "Elegant gold decorations and luxurious details",
+        "description_key": "visual_royal",
         "color": "#b8860b"
     },
     "Traditional Indian": {
         "emoji": "🪷",
-        "description": "Traditional decorations, flowers, and cultural charm",
+        "description_key": "visual_traditional",
         "color": "#c2410c"
     },
     "Elegant & Minimal": {
         "emoji": "🤍",
-        "description": "Minimal decorations with timeless elegance",
+        "description_key": "visual_minimal",
         "color": "#64748b"
     },
     "Colorful & Fun": {
         "emoji": "🎊",
-        "description": "Bright colors, playful decorations, and joyful energy",
+        "description_key": "visual_colorful",
         "color": "#db2777"
     },
     "Modern & Futuristic": {
         "emoji": "🚀",
-        "description": "Modern lighting and futuristic decorative elements",
+        "description_key": "visual_futuristic",
         "color": "#7c3aed"
     }
 }
 
 visual = theme_visuals[theme]
 
-st.markdown(
-    f"""
-    <div style="
-        background: linear-gradient(135deg, {visual['color']}55, #211137);
-        border: 1px solid {visual['color']};
-        border-radius: 24px;
-        padding: 30px;
-        text-align: center;
-    ">
-        <div aria-hidden="true" style="font-size: 55px;">{visual['emoji']}</div>
-        <h3>{event_name or event_type}</h3>
-        <p>{visual['description']}</p>
-        <p>📍 {location or 'Location not specified'}</p>
-        <p>👥 {guests:,} guests</p>
-        <h3>₹{budget:,.0f}</h3>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+with st.container(border=True):
+    st.subheader(
+        f"{visual['emoji']} {event_name or t(event_type_labels[event_type])}"
+    )
+    st.write(t(visual["description_key"]))
+    detail_col1, detail_col2, detail_col3 = st.columns(3)
+    detail_col1.metric(
+        t("event_location"),
+        location or t("not_specified"),
+    )
+    detail_col2.metric(t("guests"), f"{guests:,}")
+    detail_col3.metric(t("total_budget"), f"₹{budget:,.0f}")
 
-st.caption(
-    "✨ Your preview updates automatically when you change your event details."
-)
+st.caption(f"✨ {t('preview_updates')}")
 st.divider()
 
 st.markdown(
-    "<center>✨ CelebrAI | Crafted for unforgettable moments ✨</center>",
+    f"<center>✨ {t('crafted_by')} ✨</center>",
     unsafe_allow_html=True
 )
 st.divider()
 
-st.header("📅 Event Preparation Timeline")
+st.header(f"📅 {t('timeline')}", anchor="preparation-timeline")
 
 timeline = [
-    ("4 weeks before", "Finalize the budget and book the venue"),
-    ("3 weeks before", "Confirm catering and decorations"),
-    ("2 weeks before", "Arrange photography and entertainment"),
-    ("1 week before", "Confirm guest list and invitations"),
-    ("2 days before", "Reconfirm vendors and arrangements"),
-    ("Event day", "Enjoy your celebration! 🎉")
+    ("timeline_four_weeks", "task_four_weeks"),
+    ("timeline_three_weeks", "task_three_weeks"),
+    ("timeline_two_weeks", "task_two_weeks"),
+    ("timeline_one_week", "task_one_week"),
+    ("timeline_two_days", "task_two_days"),
+    ("timeline_event_day", "task_event_day"),
 ]
 
-for timing, task in timeline:
+localized_timeline = [(t(timing), t(task)) for timing, task in timeline]
+for timing, task in localized_timeline:
     with st.expander(f"🗓️ {timing}"):
         st.write(task)
         st.divider()
 
-st.header("📄 Download Your Event Plan")
+st.header(f"📄 {t('download_plan')}", anchor="download-event-plan")
 
 report = f"""
-CELEBRAI — CELEBRATION & EVENT PLANNER
-======================================
+{t('report_title').upper()}
 
-EVENT DETAILS
+{t('pdf_overview').upper()}
 
-Event Name: {event_name or event_type}
-Event Type: {event_type}
-Location: {location or 'Not specified'}
-Number of Guests: {guests}
-Theme: {theme}
-Total Budget: Rs. {budget:,.0f}
-Budget Per Guest: Rs. {budget / guests:,.0f}
+{t('event_name')}: {event_name or t(event_type_labels[event_type])}
+{t('event_type')}: {t(event_type_labels[event_type])}
+{t('event_location')}: {location or t('not_specified')}
+{t('guest_count')}: {guests}
+{t('event_vibe')}: {t(event_vibe_labels[theme])}
+{t('total_budget')}: ₹{budget:,.0f}
+{t('budget_per_guest')}: ₹{budget / guests:,.0f}
 
-SUGGESTED BUDGET BREAKDOWN
+{t('pdf_breakdown').upper()}
 """
 
 for category, percentage in allocations.items():
     amount = budget * percentage
-    report += f"\n{category}: Rs. {amount:,.0f}"
+    report += f"\n{t(allocation_labels[category])}: ₹{amount:,.0f}"
 
-report += "\n\nEVENT PREPARATION TIMELINE\n"
+report += f"\n\n{t('timeline').upper()}\n"
 
-for timing, task in timeline:
+for timing, task in localized_timeline:
     report += f"\n{timing}: {task}"
 
-report += "\n\nCreated with CelebrAI — Every Celebration Deserves a Little Magic!"
+report += f"\n\n{t('pdf_created')}"
 
 st.download_button(
-    label="📥 Download My Event Plan",
+    label=f"📥 {t('download_plan')}",
     data=report,
     file_name="CelebrAI_Event_Plan.txt",
     mime="text/plain",
-    use_container_width=True
+    width="stretch"
 )
 
 
 st.divider()
 
-st.header("🤖 Your Personal AI Event Planner")
+st.header(f"🤖 {t('ai_planner')}", anchor="ai-event-planner")
 
 st.write(
-    "Let Gemini AI create a personalised celebration plan "
-    "based on your event details!"
+    t("ai_planner_desc")
 )
 
-if st.button("✨ Generate My AI Event Plan", use_container_width=True):
+if st.button(f"✨ {t('generate_ai_plan')}", width="stretch"):
 
     prompt = f"""
     You are an expert event planner.
@@ -741,7 +928,8 @@ if st.button("✨ Generate My AI Event Plan", use_container_width=True):
     """
 
     try:
-        with st.spinner("✨ Gemini is planning your celebration..."):
+        client = get_gemini_client(st.secrets["GEMINI_API_KEY"])
+        with st.spinner(f"✨ {t('ai_loading')}"):
 
             response = client.models.generate_content(
                 model="gemini-3.5-flash-lite",
@@ -749,48 +937,45 @@ if st.button("✨ Generate My AI Event Plan", use_container_width=True):
             )
 
         if response.text:
-            st.success("🎉 Your AI event plan is ready!")
+            st.success(f"🎉 {t('ai_ready')}")
             st.markdown(response.text)
+            st.caption(t("interface_translation_note"))
 
             st.download_button(
-                label="📥 Download My AI Event Plan",
+                label=f"📥 {t('download_ai_plan')}",
                 data=response.text,
                 file_name="CelebrAI_AI_Event_Plan.txt",
                 mime="text/plain",
-                use_container_width=True
+                width="stretch"
             )
         else:
-            st.warning("Gemini returned an empty response. Try again.")
+            st.warning(t("ai_empty_response"))
+
+    except (KeyError, StreamlitSecretNotFoundError):
+        st.error(t("ai_missing_key"))
 
     except Exception as e:
         error_message = str(e)
 
         if "503" in error_message or "UNAVAILABLE" in error_message:
-            st.warning(
-                "🌟 Gemini is temporarily busy. Wait a few minutes "
-                "and try again."
-            )
+            st.warning(f"🌟 {t('ai_busy')}")
 
         elif "429" in error_message or "RESOURCE_EXHAUSTED" in error_message:
-            st.warning(
-                "⏳ API quota or rate limit reached. "
-                "Check your Gemini API usage."
-            )
+            st.warning(f"⏳ {t('ai_quota')}")
 
         else:
-            st.error("We couldn't generate your AI event plan.")
-            st.caption(f"Technical details: {error_message}")
+            st.error(t("ai_failed"))
 
 st.divider()
 
-st.header("⏳ Your Celebration Countdown")
+st.header(f"⏳ {t('countdown')}", anchor="celebration-countdown")
 
 st.write(
-    "Every unforgettable moment begins with a countdown! ✨"
+    t("countdown_desc")
 )
 
 event_date = st.date_input(
-    "📅 When is your celebration?",
+    f"📅 {t('event_date')}",
     value=date.today(),
     min_value=date(2000, 1, 1),
     key="celebrai_event_date"
@@ -844,81 +1029,66 @@ st.markdown(
 )
 
 if days_left > 0:
-
-    st.markdown(
-        f"""
-        <div class="countdown-card">
-            <div style="font-size:45px;">🎊✨🎉</div>
-            <div class="countdown-number">{days_left}</div>
-            <div class="countdown-caption">
-                DAYS UNTIL YOUR CELEBRATION!
-            </div>
-            <p style="color:#ffd782;">
-                Your special moment is getting closer!
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    st.metric(t("days_until"), f"{days_left}")
+    st.info(t("countdown_future"))
 
 elif days_left == 0:
-
-
-    st.success(
-        "🎉🎂 TODAY IS YOUR SPECIAL DAY! "
-        "Enjoy every magical moment!"
-    )
+    st.success(f"🎉🎂 {t('today_event')}")
 
 else:
-
-    st.info(
-        f"✨ Your selected event date was {-days_left} "
-        "days ago. Choose a future date to start a new countdown."
-    )
+    st.info(t("past_event", days=-days_left))
 
 st.caption(
-    f"📅 Selected event date: {event_date.strftime('%d %B %Y')}"
+    f"📅 {t('selected_date', date=event_date.strftime('%d/%m/%Y'))}"
 )
 st.divider()
 
-st.header("💌 Digital Invitation Designer")
+st.header(f"💌 {t('invitation')}", anchor="invitation-studio")
 
 st.write(
-    "Create a beautiful personalised invitation "
-    "for your unforgettable celebration!"
+    t("invitation_desc")
 )
 
 # Invitation customisation
 invite_title = st.text_input(
-    "Invitation title",
-    value=event_name or f"My {event_type}"
+    t("invitation_title"),
+    value=event_name or t(
+        "example_event_title",
+        event_type=t(event_type_labels[event_type]),
+    ),
+    key="invitation_title",
 )
 
 invite_date = st.date_input(
-    "Invitation date",
+    t("invitation_date"),
     key="invitation_date"
 )
 
 invite_location = st.text_input(
-    "Invitation venue",
+    t("invitation_venue"),
     value=location,
     key="invitation_location"
 )
 
 invite_message = st.text_area(
-    "Your invitation message",
-    value="Join us for a beautiful celebration filled with "
-          "happiness, laughter and unforgettable memories!"
+    t("invitation_message"),
+    value=t("invitation_default_message"),
+    key="invitation_message",
 )
 
+invitation_style_labels = {
+    "Royal Gold": "option_invite_gold",
+    "Rose Romance": "option_invite_rose",
+    "Midnight Purple": "option_invite_purple",
+    "Emerald Elegance": "option_invite_emerald",
+}
 invite_style = st.selectbox(
-    "Choose invitation design",
-    [
-        "Royal Gold",
-        "Rose Romance",
-        "Midnight Purple",
-        "Emerald Elegance"
-    ]
+    t("invitation_style"),
+    list(invitation_style_labels),
+    format_func=lambda option: translate(
+        invitation_style_labels[option], selected_language
+    ),
+    key="invitation_design",
 )
 
 # Theme colours
@@ -946,8 +1116,8 @@ invitation_themes = {
 }
 
 if st.button(
-    "✨ Create My Invitation",
-    use_container_width=True
+    f"✨ {t('invitation_create')}",
+    width="stretch"
 ):
     colors = invitation_themes[invite_style]
 
@@ -1026,14 +1196,14 @@ if st.button(
         )
 
     draw_centered(
-        "YOU ARE CORDIALLY INVITED",
+        t("invitation_greeting"),
         165,
         small_font,
         colors["text"]
     )
 
     draw_centered(
-        "A SPECIAL CELEBRATION",
+        t("invitation_event"),
         220,
         heading_font,
         colors["accent"]
@@ -1047,7 +1217,7 @@ if st.button(
     )
 
     title_lines = textwrap.wrap(
-        invite_title.strip() or "Our Special Day",
+        invite_title.strip() or t("invitation_default_title"),
         width=23
     )[:2]
 
@@ -1064,7 +1234,7 @@ if st.button(
 
 
     draw_centered(
-        "PLEASE JOIN US FOR",
+        t("invitation_join"),
         465,
         small_font,
         colors["text"]
@@ -1072,7 +1242,7 @@ if st.button(
 
     message_lines = textwrap.wrap(
         invite_message.strip() or
-        "Join us for a wonderful celebration filled with happiness and beautiful memories.",
+        t("invitation_default_message"),
         width=43
     )[:4]
 
@@ -1094,28 +1264,28 @@ if st.button(
     )
 
     draw_centered(
-        "DATE",
+        t("invitation_date_label"),
         730,
         heading_font,
         colors["accent"]
     )
 
     draw_centered(
-        invite_date.strftime("%d %B %Y"),
+        invite_date.strftime("%d/%m/%Y"),
         780,
         body_font,
         colors["text"]
     )
 
     draw_centered(
-        "VENUE",
+        t("invitation_venue_label"),
         840,
         heading_font,
         colors["accent"]
     )
 
     venue_lines = textwrap.wrap(
-        invite_location.strip() or "Venue to be announced",
+        invite_location.strip() or t("venue_to_be_announced"),
         width=35
     )[:2]
 
@@ -1138,14 +1308,14 @@ if st.button(
     )
 
     draw_centered(
-        "WE LOOK FORWARD TO CELEBRATING WITH YOU!",
+        t("invitation_closing"),
         1055,
         small_font,
         colors["text"]
     )
 
     draw_centered(
-        "MADE WITH CELEBRAI",
+        t("made_with"),
         1100,
         small_font,
         colors["accent"]
@@ -1162,32 +1332,35 @@ if st.button(
     png_data = image_bytes.getvalue()
 
     st.success(
-        "✨ Your beautiful invitation is ready!"
+        f"✨ {t('invitation_ready')}"
     )
 
     st.image(
         png_data,
-        caption="Your personalized CelebrAI invitation",
-        use_container_width=True,
+        caption=t("invitation_image_caption"),
+        width="stretch",
         alt=(
-            f"Invitation for {invite_title.strip() or 'Our Special Day'}, "
-            f"dated {invite_date.strftime('%d %B %Y')}, at "
-            f"{invite_location.strip() or 'venue to be announced'}."
+            t(
+                "invitation_alt",
+                title=invite_title.strip() or t("invitation_default_title"),
+                date=invite_date.strftime("%d/%m/%Y"),
+                venue=invite_location.strip() or t("venue_to_be_announced"),
+            )
         ),
     )
 
     st.download_button(
-        label="📥 Download Your Invitation",
+        label=f"📥 {t('invitation_download')}",
         data=png_data,
         file_name="CelebrAI_Invitation.png",
         mime="image/png",
-        use_container_width=True
+        width="stretch"
     )
 
     st.divider()
 
-st.header("💰 Smart Event Expense Tracker")
-st.write("Track your event spending and keep your celebration within budget! ✨")
+st.header(f"💰 {t('expense_tracker')}", anchor="expense-tracker")
+st.write(f"{t('expense_desc')} ✨")
 
 if "event_expenses" not in st.session_state:
     st.session_state.event_expenses = pd.DataFrame({
@@ -1197,8 +1370,27 @@ if "event_expenses" not in st.session_state:
         "Actual Cost (₹)": [10000, 14000, 4500]
     })
 
+expense_category_labels = {
+    "Venue": "expense_category_venue",
+    "Food": "expense_category_food",
+    "Decoration": "expense_category_decoration",
+    "Photography": "expense_category_photography",
+    "Entertainment": "expense_category_entertainment",
+    "Transport": "expense_category_transport",
+    "Gifts": "expense_category_gifts",
+    "Other": "expense_category_other",
+}
+localized_category_values = {
+    category: t(label_key)
+    for category, label_key in expense_category_labels.items()
+}
+localized_expenses = st.session_state.event_expenses.copy()
+localized_expenses["Category"] = localized_expenses["Category"].map(
+    lambda category: localized_category_values.get(category, category)
+)
+
 expense_budget = st.number_input(
-    "🎯 Set your total event budget (₹)",
+    f"🎯 {t('set_budget')}",
     min_value=1000,
     max_value=10000000,
     value=50000,
@@ -1206,45 +1398,43 @@ expense_budget = st.number_input(
     key="expense_tracker_budget"
 )
 
-st.subheader("📝 Manage Your Expenses")
+st.subheader(f"📝 {t('manage_expenses')}")
 
 edited_expenses = st.data_editor(
-    st.session_state.event_expenses,
+    localized_expenses,
     num_rows="dynamic",
-    use_container_width=True,
+    width="stretch",
     key="expense_editor",
     column_config={
         "Expense": st.column_config.TextColumn(
-            "Expense Name",
+            t("expense_name"),
             required=True
         ),
         "Category": st.column_config.SelectboxColumn(
-            "Category",
-            options=[
-                "Venue",
-                "Food",
-                "Decoration",
-                "Photography",
-                "Entertainment",
-                "Transport",
-                "Gifts",
-                "Other"
-            ],
+            t("category"),
+            options=list(localized_category_values.values()),
             required=True
         ),
         "Estimated Cost (₹)": st.column_config.NumberColumn(
-            "Estimated Cost (₹)",
+            t("estimated_cost"),
             min_value=0,
             format="₹%.2f"
         ),
         "Actual Cost (₹)": st.column_config.NumberColumn(
-            "Actual Cost (₹)",
+            t("actual_cost"),
             min_value=0,
             format="₹%.2f"
         )
     }
 )
 
+canonical_category_values = {
+    localized: category
+    for category, localized in localized_category_values.items()
+}
+edited_expenses["Category"] = edited_expenses["Category"].map(
+    lambda category: canonical_category_values.get(category, category)
+)
 st.session_state.event_expenses = edited_expenses
 
 expense_summary = calculate_expense_summary(edited_expenses, expense_budget)
@@ -1256,60 +1446,68 @@ metric1, metric2, metric3 = st.columns(3)
 
 with metric1:
     st.metric(
-        "🎯 Total Budget",
+        f"🎯 {t('total_budget_metric')}",
         f"₹{expense_budget:,.0f}"
     )
 
 with metric2:
     st.metric(
-        "💸 Actual Spending",
+        f"💸 {t('actual_spending')}",
         f"₹{actual_total:,.0f}",
-        delta=f"₹{actual_total - estimated_total:,.0f} vs estimate",
+        delta=t(
+            "budget_delta",
+            amount=f"₹{actual_total - estimated_total:,.0f}",
+        ),
         delta_color="inverse"
     )
 
 with metric3:
     st.metric(
-        "💚 Budget Remaining",
+        f"💚 {t('remaining_budget')}",
         f"₹{remaining_budget:,.0f}"
     )
 
 if actual_total > expense_budget:
-    st.error("🚨 Budget exceeded! Consider reducing some expenses.")
+    st.error(
+        t("budget_exceeded", amount=f"₹{abs(remaining_budget):,.0f}")
+    )
+elif remaining_budget == 0:
+    st.warning(t("budget_fully_used"))
 else:
-    st.success("🎉 Great! Your spending is within your budget.")
+    st.success(t("within_budget"))
 
 # Budget usage
 progress = min(actual_total / expense_budget, 1.0)
 
 st.progress(
     progress,
-    text=f"{progress * 100:.1f}% of your budget used"
+    text=t("budget_progress", percent=f"{progress * 100:.1f}%")
 )
-
-if remaining_budget > 0:
-    st.caption(f"💚 Remaining budget: ₹{remaining_budget:,.0f}")
-elif remaining_budget == 0:
-    st.warning("⚠️ Your entire budget has been used.")
-else:
-    st.error(f"🚨 You exceeded your budget by ₹{abs(remaining_budget):,.0f}.")
+st.caption(f"{t('remaining_budget')}: ₹{remaining_budget:,.0f}")
 
 
-st.subheader("📊 Expense Analytics")
+st.subheader(f"📊 {t('expense_analytics')}")
 
 if not edited_expenses.empty:
     chart_col1, chart_col2 = st.columns(2)
 
     with chart_col1:
-        st.markdown("#### Actual spending by category")
+        st.markdown(f"#### {t('actual_by_category')}")
+        category_totals = expense_summary.category_totals.rename(
+            index=lambda category: (
+                t(expense_category_labels[category])
+                if category in expense_category_labels
+                else category
+            )
+        )
         st.bar_chart(
-            expense_summary.category_totals,
-            alt="Bar chart of actual spending totals for each expense category.",
+            category_totals,
+            alt=t("expense_category_chart_alt"),
         )
         category_table = (
-            expense_summary.category_totals
+            category_totals
             .rename("Actual Cost (₹)")
-            .rename_axis("Category")
+            .rename_axis(t("category"))
             .reset_index()
         )
         st.dataframe(
@@ -1317,88 +1515,92 @@ if not edited_expenses.empty:
             hide_index=True,
             height="content",
             width="stretch",
-            alt="Actual expense totals by category, in Indian rupees.",
+            alt=t("expense_category_table_alt"),
         )
 
     with chart_col2:
-        st.markdown("#### Estimated and actual costs by expense")
+        st.markdown(f"#### {t('estimate_vs_actual')}")
         st.bar_chart(
             expense_summary.comparison,
-            alt=(
-                "Bar chart comparing estimated and actual costs "
-                "for each expense."
-            ),
+            alt=t("expense_comparison_chart_alt"),
         )
         st.dataframe(
             expense_summary.comparison.rename_axis("Expense").reset_index(),
             hide_index=True,
             height="content",
             width="stretch",
-            alt=(
-                "Table comparing estimated and actual costs "
-                "for each expense, in Indian rupees."
-            ),
+            alt=t("expense_comparison_table_alt"),
         )
+else:
+    st.info(t("empty_expenses"))
 
 st.caption(
-    "✨ CelebrAI helps you plan beautiful celebrations without losing track of your budget."
+    t("budget_footer")
 )
 st.divider()
 
-st.header("🎨 Discover Your Dream Event Theme")
+st.header(f"🎨 {t('theme_gallery')}", anchor="theme-gallery")
 st.write(
-    "Explore beautiful celebration styles and find the perfect "
-    "atmosphere for your special day! ✨"
+    f"{t('theme_gallery_desc')} ✨"
 )
 
 event_gallery = {
     "👑 Royal Luxury": {
+        "name_key": "gallery_royal_name",
+        "heading_key": "gallery_royal_heading",
+        "description_key": "gallery_royal_description",
         "background": "linear-gradient(135deg, #1a103d, #5b238a, #d4af37)",
-        "heading": "A ROYAL CELEBRATION",
-        "description": "Golden elegance, grand decorations and luxurious details.",
         "colors": ["#2D1555", "#D4AF37", "#FFF4D6"],
         "decor": "👑 ✨ 🏰 🥂 💎"
     },
     "🌸 Rose Gold Romance": {
+        "name_key": "gallery_rose_name",
+        "heading_key": "gallery_rose_heading",
+        "description_key": "gallery_rose_description",
         "background": "linear-gradient(135deg, #f7c5cc, #c77986, #7c3f58)",
-        "heading": "LOVE IN EVERY DETAIL",
-        "description": "Romantic flowers, soft lighting and rose-gold elegance.",
         "colors": ["#C77986", "#F7C5CC", "#FFF0E8"],
         "decor": "🌸 💐 💗 🕯️ 🌹"
     },
     "🌊 Ocean Dream": {
+        "name_key": "gallery_ocean_name",
+        "heading_key": "gallery_ocean_heading",
+        "description_key": "gallery_ocean_description",
         "background": "linear-gradient(135deg, #042f40, #087e8b, #65d6ce)",
-        "heading": "A BREATHTAKING ESCAPE",
-        "description": "Refreshing ocean colours and a cool, contemporary vibe.",
         "colors": ["#042F40", "#087E8B", "#65D6CE"],
         "decor": "🌊 🐚 🐬 🫧 🪸"
     },
     "🌿 Emerald Elegance": {
+        "name_key": "gallery_emerald_name",
+        "heading_key": "gallery_emerald_heading",
+        "description_key": "gallery_emerald_description",
         "background": "linear-gradient(135deg, #092b23, #176b4d, #b6c77b)",
-        "heading": "NATURE MEETS ELEGANCE",
-        "description": "Lush greenery, natural beauty and peaceful celebrations.",
         "colors": ["#092B23", "#176B4D", "#B6C77B"],
         "decor": "🌿 🌱 🌳 🌼 🍃"
     },
     "🎉 Colorful Carnival": {
+        "name_key": "gallery_carnival_name",
+        "heading_key": "gallery_carnival_heading",
+        "description_key": "gallery_carnival_description",
         "background": "linear-gradient(135deg, #ff416c, #ff9a44, #7b2ff7)",
-        "heading": "LET THE PARTY BEGIN!",
-        "description": "Vibrant colours, joyful decorations and energetic fun.",
         "colors": ["#FF416C", "#FF9A44", "#7B2FF7"],
         "decor": "🎈 🎊 🎉 🎂 🪩"
     },
     "🌌 Midnight Galaxy": {
+        "name_key": "gallery_galaxy_name",
+        "heading_key": "gallery_galaxy_heading",
+        "description_key": "gallery_galaxy_description",
         "background": "linear-gradient(135deg, #080820, #302b63, #7f53ac)",
-        "heading": "A NIGHT AMONG THE STARS",
-        "description": "Magical lighting, cosmic colours and a futuristic atmosphere.",
         "colors": ["#080820", "#302B63", "#7F53AC"],
         "decor": "🌌 🌙 ⭐ ✨ 🪐"
     }
 }
 
 selected_gallery_theme = st.selectbox(
-    "✨ Choose a celebration style",
+    f"✨ {t('choose_style')}",
     list(event_gallery.keys()),
+    format_func=lambda option: translate(
+        event_gallery[option]["name_key"], selected_language
+    ),
     key="gallery_theme_choice"
 )
 
@@ -1429,13 +1631,13 @@ st.markdown(
             letter-spacing: 2px;
             font-size: 30px;
         ">
-            {selected_theme_data['heading']}
+            {t(selected_theme_data['heading_key'])}
         </h3>
         <p style="font-size: 17px;">
-            {selected_theme_data['description']}
+            {t(selected_theme_data['description_key'])}
         </p>
         <div style="font-size: 24px; margin-top: 22px;">
-            ✨ YOUR SPECIAL MOMENT STARTS HERE ✨
+            ✨ {t("gallery_tagline")} ✨
         </div>
         </div>
     </div>
@@ -1443,7 +1645,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.subheader("🎨 Your Theme Colour Palette")
+st.subheader(f"🎨 {t('color_palette')}")
 
 palette_columns = st.columns(len(selected_theme_data["colors"]))
 
@@ -1465,47 +1667,43 @@ for index, colour in enumerate(selected_theme_data["colors"]):
         )
 
 st.success(
-    f"Your selected style is **{selected_gallery_theme}**. "
-    "Try another theme to preview a different celebration atmosphere!"
+    t(
+        "theme_selected",
+        theme=t(selected_theme_data["name_key"]),
+    )
 )
 st.divider()
 
-st.header("📄 Your Professional Event Plan")
-st.write(
-    "Create a shareable PDF report for your celebration "
-    "and keep all your important details together."
-)
+st.header(f"📄 {t('professional_plan')}", anchor="professional-event-plan")
+st.write(t("professional_plan_desc"))
 
 pdf_event_name = st.text_input(
-    "🎉 Event name for PDF",
-    value="My Dream Celebration",
+    f"🎉 {t('pdf_event_name')}",
+    value=t("pdf_default_event_name"),
     key="pdf_event_name"
 )
 
 pdf_event_type = st.selectbox(
-    "🎊 Event type for PDF",
-    [
-        "Wedding",
-        "Birthday",
-        "College Fest",
-        "Anniversary",
-        "Community Celebration"
-    ],
+    f"🎊 {t('pdf_event_type')}",
+    list(event_type_labels),
+    format_func=lambda option: translate(
+        event_type_labels[option], selected_language
+    ),
     key="pdf_event_type"
 )
 
 pdf_event_date = st.date_input(
-    "📅 Event date for PDF",
+    f"📅 {t('pdf_event_date')}",
     key="pdf_event_date"
 )
 
 pdf_location = st.text_input(
-    "📍 Event location for PDF",
+    f"📍 {t('pdf_event_location')}",
     key="pdf_event_location"
 )
 
 pdf_guests = st.number_input(
-    "👥 Expected number of guests",
+    f"👥 {t('pdf_guest_count')}",
     min_value=1,
     max_value=100000,
     value=100,
@@ -1513,7 +1711,7 @@ pdf_guests = st.number_input(
 )
 
 pdf_budget = st.number_input(
-    "💰 Total event budget (₹)",
+    f"💰 {t('pdf_budget')}",
     min_value=1000,
     max_value=10000000,
     value=50000,
@@ -1522,8 +1720,8 @@ pdf_budget = st.number_input(
 )
 
 if st.button(
-    "✨ Generate My Event Plan PDF",
-    use_container_width=True,
+    f"✨ {t('create_pdf')}",
+    width="stretch",
     key="generate_event_pdf"
 ):
     pdf_buffer = BytesIO()
@@ -1573,20 +1771,20 @@ if st.button(
     story.append(Paragraph("CelebrAI", title_style))
     story.append(
         Paragraph(
-            "YOUR PERSONAL CELEBRATION PLANNER",
+            t("pdf_subtitle"),
             subtitle_style
         )
     )
 
-    story.append(Paragraph("Event Overview", section_style))
+    story.append(Paragraph(t("pdf_overview"), section_style))
 
     event_details = [
-        ["Event Name", pdf_event_name],
-        ["Event Type", pdf_event_type],
-        ["Event Date", pdf_event_date.strftime("%d %B %Y")],
-        ["Location", pdf_location if pdf_location else "Not specified"],
-        ["Expected Guests", f"{pdf_guests:,}"],
-        ["Total Budget", f"Rs. {pdf_budget:,.2f}"]
+        [t("event_name"), escape(pdf_event_name)],
+        [t("event_type"), t(event_type_labels[pdf_event_type])],
+        [t("pdf_event_date_label"), pdf_event_date.strftime("%d/%m/%Y")],
+        [t("event_location"), escape(pdf_location) if pdf_location else t("not_specified")],
+        [t("guest_count"), f"{pdf_guests:,}"],
+        [t("total_budget"), f"₹{pdf_budget:,.2f}"]
     ]
 
     details_table = Table(
@@ -1607,17 +1805,17 @@ if st.button(
     story.append(details_table)
     story.append(Spacer(1, 18))
 
-    story.append(Paragraph("Suggested Budget Breakdown", section_style))
+    story.append(Paragraph(t("pdf_breakdown"), section_style))
 
     budget_allocations = [
-        ["Expense Category", "Suggested Allocation", "Amount"],
-        ["Venue", "25%", f"Rs. {pdf_budget * 0.25:,.2f}"],
-        ["Food & Catering", "30%", f"Rs. {pdf_budget * 0.30:,.2f}"],
-        ["Decoration", "15%", f"Rs. {pdf_budget * 0.15:,.2f}"],
-        ["Photography", "10%", f"Rs. {pdf_budget * 0.10:,.2f}"],
-        ["Entertainment", "10%", f"Rs. {pdf_budget * 0.10:,.2f}"],
-        ["Miscellaneous", "10%", f"Rs. {pdf_budget * 0.10:,.2f}"],
-        ["TOTAL", "100%", f"Rs. {pdf_budget:,.2f}"]
+        [t("pdf_expense_category"), t("pdf_allocation"), t("pdf_amount")],
+        [t("budget_venue"), "25%", f"₹{pdf_budget * 0.25:,.2f}"],
+        [t("budget_catering"), "30%", f"₹{pdf_budget * 0.30:,.2f}"],
+        [t("budget_decoration"), "15%", f"₹{pdf_budget * 0.15:,.2f}"],
+        [t("budget_photography"), "10%", f"₹{pdf_budget * 0.10:,.2f}"],
+        [t("budget_entertainment"), "10%", f"₹{pdf_budget * 0.10:,.2f}"],
+        [t("budget_miscellaneous"), "10%", f"₹{pdf_budget * 0.10:,.2f}"],
+        [t("total_budget_metric"), "100%", f"₹{pdf_budget:,.2f}"]
     ]
 
     budget_table = Table(
@@ -1642,11 +1840,16 @@ if st.button(
     story.append(Spacer(1, 20))
 
     story.append(
-        Paragraph("Actual Expense Tracker Report", section_style)
+        Paragraph(t("pdf_expense_report"), section_style)
     )
 
     # Read expenses from the interactive expense tracker
-    expense_data = [["Expense", "Category", "Estimated (Rs.)", "Actual (Rs.)"]]
+    expense_data = [[
+        t("expense_name"),
+        t("category"),
+        t("estimated_cost"),
+        t("actual_cost"),
+    ]]
 
     if "event_expenses" in st.session_state:
         current_expenses = st.session_state.event_expenses
@@ -1662,12 +1865,18 @@ if st.button(
         ].itertuples(index=False, name=None):
             expense_data.append([
                 "" if pd.isna(expense) else str(expense),
-                "" if pd.isna(category) else str(category),
+                (
+                    ""
+                    if pd.isna(category)
+                    else t(expense_category_labels[category])
+                    if category in expense_category_labels
+                    else str(category)
+                ),
                 f"{0 if pd.isna(estimated) else float(estimated):,.2f}",
                 f"{0 if pd.isna(actual) else float(actual):,.2f}",
             ])
     else:
-        expense_data.append(["No expenses entered", "-", "-", "-"])
+        expense_data.append([t("pdf_no_expenses"), "-", "-", "-"])
 
     expense_table = Table(
         expense_data,
@@ -1689,8 +1898,7 @@ if st.button(
 
     story.append(
         Paragraph(
-            "Planning tip: Keep a small emergency fund for unexpected expenses "
-            "and update your spending as bookings are confirmed.",
+            t("pdf_planning_tip"),
             styles["BodyText"]
         )
     )
@@ -1699,7 +1907,7 @@ if st.button(
 
     story.append(
         Paragraph(
-            "Created with CelebrAI | Make every celebration unforgettable!",
+            t("pdf_created"),
             subtitle_style
         )
     )
@@ -1708,39 +1916,40 @@ if st.button(
 
     pdf_buffer.seek(0)
 
-    st.success("🎉 Your event plan PDF is ready!")
+    st.success(f"🎉 {t('pdf_ready')}")
 
     st.download_button(
-        label="📥 Download Your Event Plan",
+        label=f"📥 {t('download_plan')}",
         data=pdf_buffer.getvalue(),
         file_name="CelebrAI_Event_Plan.pdf",
         mime="application/pdf",
-        use_container_width=True,
+        width="stretch",
         key="download_event_pdf"
     )
     st.divider()
 
-st.header("🤖 AI-Powered Theme Recommendations")
+st.header(
+    f"🤖 {t('theme_recommendations')}",
+    anchor="ai-theme-recommendations",
+)
 
 st.write(
-    "Let CelebrAI suggest a celebration theme tailored to your event, "
-    "budget, and guests!"
+    t("theme_recommendations_desc")
 )
 
 recommendation_event = st.selectbox(
-    "🎉 What are you celebrating?",
+    f"🎉 {t('event_type')}",
     [
-        "Wedding",
-        "Birthday",
-        "College Fest",
-        "Anniversary",
-        "Community Celebration"
+        *event_type_labels,
     ],
+    format_func=lambda option: translate(
+        event_type_labels[option], selected_language
+    ),
     key="recommendation_event"
 )
 
 recommendation_budget = st.number_input(
-    "💰 Your budget (₹)",
+    f"💰 {t('budget')}",
     min_value=1000,
     max_value=10000000,
     value=50000,
@@ -1749,29 +1958,35 @@ recommendation_budget = st.number_input(
 )
 
 recommendation_guests = st.number_input(
-    "👥 Number of guests",
+    f"👥 {t('guest_count')}",
     min_value=1,
     max_value=100000,
     value=100,
     key="recommendation_guests"
 )
 
+recommendation_vibe_labels = {
+    "Royal and luxurious": "option_royal",
+    "Traditional Indian": "option_traditional",
+    "Elegant and minimal": "option_minimal",
+    "Colorful and fun": "option_colorful",
+    "Modern and futuristic": "option_futuristic",
+    "Nature-inspired and peaceful": "option_nature",
+}
 recommendation_vibe = st.selectbox(
-    "✨ Choose your preferred atmosphere",
+    f"✨ {t('preferred_atmosphere')}",
     [
-        "Royal and luxurious",
-        "Traditional Indian",
-        "Elegant and minimal",
-        "Colorful and fun",
-        "Modern and futuristic",
-        "Nature-inspired and peaceful"
+        *recommendation_vibe_labels,
     ],
+    format_func=lambda option: translate(
+        recommendation_vibe_labels[option], selected_language
+    ),
     key="recommendation_vibe"
 )
 
 if st.button(
-    "✨ Recommend My Perfect Theme",
-    use_container_width=True,
+    f"✨ {t('recommend_theme')}",
+    width="stretch",
     key="recommend_theme_button"
 ):
     recommendation_prompt = f"""
@@ -1797,8 +2012,9 @@ if st.button(
     """
 
     try:
+        client = get_gemini_client(st.secrets["GEMINI_API_KEY"])
         with st.spinner(
-            "✨ CelebrAI is designing your perfect celebration..."
+            f"✨ {t('theme_loading')}"
         ):
             recommendation_response = client.models.generate_content(
                 model="gemini-3.5-flash-lite",
@@ -1808,40 +2024,35 @@ if st.button(
         if recommendation_response.text:
             recommendation_text = recommendation_response.text
 
-            st.success("🎉 Your personalized theme recommendation is ready!")
+            st.success(f"🎉 {t('ai_theme_ready')}")
             st.markdown(recommendation_text)
+            st.caption(t("interface_translation_note"))
 
             st.download_button(
-                "📥 Download Theme Recommendation",
+                f"📥 {t('download_theme_recommendation')}",
                 data=recommendation_text,
                 file_name="CelebrAI_Theme_Recommendation.txt",
                 mime="text/plain",
-                use_container_width=True,
+                width="stretch",
                 key="download_theme_recommendation"
             )
 
         else:
-            st.warning(
-                "The AI returned an empty response. Please try again."
-            )
+            st.warning(t("recommendation_empty"))
+
+    except (KeyError, StreamlitSecretNotFoundError):
+        st.error(t("ai_missing_key"))
 
     except Exception as e:
         error_message = str(e)
 
         if "503" in error_message or "UNAVAILABLE" in error_message:
-            st.warning(
-                "We couldn't generate your AI plan right now. "
-                "Please try again or use the built-in planner."
-            )
+            st.warning(t("ai_busy"))
 
         elif "429" in error_message or "RESOURCE_EXHAUSTED" in error_message:
-            st.warning(
-                "The AI request limit may have been reached. "
-                "Please try again later."
-            )
+            st.warning(t("ai_quota"))
 
         else:
-            st.error("Unable to generate a recommendation.")
-            st.caption(f"Technical details: {error_message}")
+            st.error(t("ai_recommendation_failed"))
 
         st.divider()

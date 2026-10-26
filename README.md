@@ -10,6 +10,7 @@ Celebration & Event Planner is an interactive web application designed to make o
 * 🎨 **Interactive Themes** — Explore attractive designs and visual styles.
 * 🎂 **Multiple Celebrations** — Plan special occasions according to your needs.
 * 💰 **Budget-Friendly Planning** — Organize your event based on your budget and preferences.
+* 🌐 **Multilingual Interface** — Switch the application interface among English, Telugu, Hindi, Tamil, Kannada, French, German, Spanish, Japanese, Korean, Chinese, and Arabic.
 * ✨ **Interactive User Interface** — Enjoy a modern and user-friendly experience.
 * ♿ **Accessibility support** — Keyboard-visible focus, reduced-motion support, and text alternatives for expense charts.
 * 🌐 **Live Web Application** — Access the application online through Streamlit Community Cloud.
@@ -35,7 +36,7 @@ Follow these steps to run the application on your computer.
 ### 1. Clone the Repository
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
+git clone https://github.com/lathasrialapati912-debug/CelebrAI-Event-Planner.git
 ```
 
 ### 2. Navigate to the Project Folder
@@ -66,9 +67,15 @@ pip install -r requirements.txt
 
 ### 6. Configure Your Gemini API Key
 
-Configure your Gemini API key using the method expected by your application.
+For local development, create `.streamlit/secrets.toml` and add your key:
 
-For Streamlit Community Cloud, you can configure secrets in your app's settings.
+```toml
+GEMINI_API_KEY = "your-gemini-api-key"
+```
+
+For Streamlit Community Cloud, add `GEMINI_API_KEY` in the app's Secrets
+settings. The non-AI planning tools remain available when the key is not
+configured; AI planning and theme recommendations require it.
 
 **Security reminder:** Never upload your API key, `.env` file, or other private credentials to GitHub.
 
@@ -80,6 +87,10 @@ streamlit run app.py
 
 The application will open in your browser.
 
+The language selector is above the welcome title. Interface translations are
+stored in `translations.py` and `translations_extra.json`; AI-generated plans
+may still be returned in English.
+
 ## 📂 Project Structure
 
 ```text
@@ -87,6 +98,8 @@ event-planner/
 ├── app.py
 ├── app_resources.py
 ├── expense_utils.py
+├── translations.py
+├── translations_extra.json
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
@@ -99,8 +112,8 @@ event-planner/
 ## 🔐 Security
 
 * Keep API keys and credentials private.
-* Never commit `.env` files containing secrets.
-* Use secure environment variables or Streamlit Secrets to store credentials.
+* Never commit `.streamlit/secrets.toml`, `.env` files, or other credentials.
+* Use Streamlit Secrets for local and deployed configuration.
 
 ## 🎯 Project Objective
 
