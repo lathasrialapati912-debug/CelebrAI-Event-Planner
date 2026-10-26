@@ -11,6 +11,8 @@ EXPENSE_COLUMNS = (
     "Actual Cost (₹)",
 )
 
+DEFAULT_BUDGET_WARNING_THRESHOLD = 0.8
+
 
 @dataclass(frozen=True)
 class ExpenseSummary:
@@ -19,6 +21,30 @@ class ExpenseSummary:
     remaining_budget: float
     category_totals: pd.Series
     comparison: pd.DataFrame
+
+
+def budget_status(
+    actual_spending: float,
+    budget: float,
+    warning_threshold: float = DEFAULT_BUDGET_WARNING_THRESHOLD,
+) -> str:
+    """Classify spending as within budget, approaching, or exceeded."""
+    values = (actual_spending, budget, warning_threshold)
+    try:
+        spending_value, budget_value, threshold_value = map(float, values)
+    except (OverflowError, TypeError, ValueError) as error:
+        raise ValueError("Spending, budget, and threshold must be numeric.") from error
+    if not all(map(math.isfinite, (spending_value, budget_value, threshold_value))):
+        raise ValueError("Spending, budget, and threshold must be finite.")
+    if spending_value < 0 or budget_value < 0:
+        raise ValueError("Spending and budget cannot be negative.")
+    if not 0 < threshold_value <= 1:
+        raise ValueError("Warning threshold must be greater than zero and at most one.")
+    if spending_value > budget_value:
+        return "exceeded"
+    if budget_value > 0 and spending_value / budget_value >= threshold_value:
+        return "approaching"
+    return "within"
 
 
 def calculate_expense_summary(

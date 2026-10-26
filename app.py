@@ -4,10 +4,25 @@ from datetime import date
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import textwrap
-from xml.sax.saxutils import escape
+import uuid
+from html import escape
 from streamlit.errors import StreamlitSecretNotFoundError
 from app_resources import get_gemini_client
-from expense_utils import calculate_expense_summary
+from checklist_utils import (
+    checklist_progress,
+    filter_checklist_tasks,
+    is_task_overdue,
+)
+from expense_utils import (
+    EXPENSE_COLUMNS,
+    budget_status,
+    calculate_expense_summary,
+)
+from plan_utils import (
+    MAX_CHECKLIST_ITEMS,
+    decode_event_plan,
+    encode_event_plan,
+)
 from translations import LANGUAGES, t, translate
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -30,6 +45,140 @@ st.set_page_config(
 
 def clear_expense_editor_state():
     st.session_state.pop("expense_editor", None)
+
+
+def current_event_plan_data():
+    """Build a JSON-safe snapshot from current session state."""
+    event_type = st.session_state.get("event_type", "Wedding")
+    event_name = st.session_state.get("event_name", "")
+    location = st.session_state.get("event_location", "")
+    event_date = st.session_state.get("celebrai_event_date", date.today())
+    invitation_date = st.session_state.get("invitation_date", date.today())
+    expenses = st.session_state.get("event_expenses")
+    if not isinstance(expenses, pd.DataFrame):
+        expenses = pd.DataFrame({
+            "Expense": ["Venue", "Food & Catering", "Decoration"],
+            "Category": ["Venue", "Food", "Decoration"],
+            "Estimated Cost (₹)": [10000, 15000, 5000],
+            "Actual Cost (₹)": [10000, 14000, 4500],
+        })
+    expenses = expenses.reindex(columns=EXPENSE_COLUMNS)
+    expense_rows = []
+    for row in expenses.to_dict(orient="records"):
+        expense_row = {}
+        for column in EXPENSE_COLUMNS:
+            value = row[column]
+            if pd.isna(value):
+                value = None
+            elif column in ("Estimated Cost (₹)", "Actual Cost (₹)"):
+                value = float(value)
+            elif column == "Expense":
+                value = str(value)
+            elif column == "Category":
+                value = str(value)
+            expense_row[column] = value
+        expense_rows.append(expense_row)
+
+    return {
+        "version": 1,
+        "event": {
+            "type": event_type,
+            "name": event_name,
+            "location": location,
+            "budget": st.session_state.get("event_budget", 50000),
+            "guests": st.session_state.get("event_guest_count", 100),
+            "theme": st.session_state.get("event_theme", "Royal & Luxurious"),
+            "date": event_date.isoformat(),
+        },
+        "preferences": {
+            "language": st.session_state.get("celebrai_language", "English"),
+            "visual_theme": st.session_state.get("theme_selector", "Royal Purple"),
+            "font": st.session_state.get("font_selector", "Modern"),
+        },
+        "expense_budget": st.session_state.get("expense_tracker_budget", 50000),
+        "expenses": expense_rows,
+        "checklist": st.session_state.get("checklist_tasks", []),
+        "invitation": {
+            "title": st.session_state.get(
+                "invitation_title", event_name or "Our Special Day"
+            ),
+            "date": invitation_date.isoformat(),
+            "location": st.session_state.get("invitation_location", location),
+            "message": st.session_state.get(
+                "invitation_message", translate(
+                    "invitation_default_message",
+                    st.session_state.get("celebrai_language", "English"),
+                )
+            ),
+            "style": st.session_state.get("invitation_design", "Royal Gold"),
+        },
+    }
+
+
+def restore_event_plan(plan):
+    """Apply a previously validated plan before its widgets are created."""
+    clear_expense_editor_state()
+    for key in list(st.session_state):
+        if key.startswith(("checklist_completed_", "checklist_text_")):
+            st.session_state.pop(key, None)
+    event = plan["event"]
+    preferences = plan["preferences"]
+    invitation = plan["invitation"]
+    st.session_state["event_type"] = event["type"]
+    st.session_state["event_name"] = event["name"]
+    st.session_state["event_location"] = event["location"]
+    st.session_state["event_budget"] = event["budget"]
+    st.session_state["event_guest_count"] = event["guests"]
+    st.session_state["event_theme"] = event["theme"]
+    st.session_state["celebrai_event_date"] = date.fromisoformat(event["date"])
+    st.session_state["celebrai_language"] = preferences["language"]
+    st.session_state["theme_selector"] = preferences["visual_theme"]
+    st.session_state["font_selector"] = preferences["font"]
+    st.session_state["expense_tracker_budget"] = plan["expense_budget"]
+    st.session_state["event_expenses"] = pd.DataFrame(
+        plan["expenses"], columns=EXPENSE_COLUMNS
+    )
+    st.session_state["checklist_tasks"] = plan["checklist"]
+    st.session_state["invitation_title"] = invitation["title"]
+    st.session_state["invitation_date"] = date.fromisoformat(invitation["date"])
+    st.session_state["invitation_location"] = invitation["location"]
+    st.session_state["invitation_message"] = invitation["message"]
+    st.session_state["invitation_design"] = invitation["style"]
+
+
+with st.expander(t("plan_backup_title"), expanded=False):
+    st.write(t("plan_backup_description"))
+    st.caption(t("backup_download_note"))
+    try:
+        backup_data = encode_event_plan(current_event_plan_data())
+    except ValueError as error:
+        st.error(str(error))
+    else:
+        st.download_button(
+            t("download_backup"),
+            data=backup_data,
+            file_name="CelebrAI_Event_Plan_Backup.json",
+            mime="application/json",
+            key="download_event_plan_backup",
+        )
+
+    uploaded_plan = st.file_uploader(
+        t("upload_backup"),
+        type=["json"],
+        max_upload_size=1,
+        key="event_plan_backup_upload",
+    )
+    if st.button(t("restore_backup"), key="restore_event_plan"):
+        if uploaded_plan is None:
+            st.warning(t("backup_missing"))
+        else:
+            try:
+                restored_plan = decode_event_plan(uploaded_plan.getvalue())
+            except ValueError as error:
+                st.error(t("backup_error", error=str(error)))
+            else:
+                restore_event_plan(restored_plan)
+                st.success(t("backup_restored"))
 
 
 st.markdown(
@@ -625,6 +774,7 @@ st.sidebar.markdown(f"### {t('quick_navigation')}")
 for section_label, section_anchor in [
     (t("preview_title"), "celebration-preview"),
     (t("timeline"), "preparation-timeline"),
+    (t("checklist"), "event-checklist"),
     (t("download_plan"), "download-event-plan"),
     (t("ai_planner"), "ai-event-planner"),
     (t("countdown"), "celebration-countdown"),
@@ -692,12 +842,14 @@ event_type = st.selectbox(
 event_name = st.text_input(
     t("event_name"),
     placeholder=t("event_name_placeholder"),
+    max_chars=120,
     key="event_name",
 )
 
 location = st.text_input(
     t("location"),
     placeholder=t("location_placeholder"),
+    max_chars=200,
     key="event_location",
 )
 
@@ -853,6 +1005,139 @@ for timing, task in localized_timeline:
     with st.expander(f"🗓️ {timing}"):
         st.write(task)
         st.divider()
+
+st.header(f"✅ {t('checklist')}", anchor="event-checklist")
+st.write(t("checklist_desc"))
+
+checklist_stages = {
+    "four_weeks": "timeline_four_weeks",
+    "three_weeks": "timeline_three_weeks",
+    "two_weeks": "timeline_two_weeks",
+    "one_week": "timeline_one_week",
+    "two_days": "timeline_two_days",
+    "event_day": "timeline_event_day",
+    "custom": "checklist_stage_custom",
+}
+
+if "checklist_tasks" not in st.session_state:
+    st.session_state["checklist_tasks"] = []
+
+with st.form("add_checklist_task_form"):
+    task_description = st.text_input(
+        t("checklist_task"),
+        max_chars=300,
+        key="new_checklist_task",
+    )
+    task_stage = st.selectbox(
+        t("checklist_stage"),
+        list(checklist_stages),
+        format_func=lambda stage: translate(
+            checklist_stages[stage], selected_language
+        ),
+        key="new_checklist_stage",
+    )
+    task_due_date = st.date_input(
+        t("checklist_due_date"),
+        value=None,
+        key="new_checklist_due_date",
+    )
+    add_task = st.form_submit_button(t("add_checklist_task"))
+
+if add_task:
+    if not task_description.strip():
+        st.error(t("checklist_task_required"))
+    elif len(st.session_state["checklist_tasks"]) >= MAX_CHECKLIST_ITEMS:
+        st.error(t("checklist_limit", maximum=MAX_CHECKLIST_ITEMS))
+    else:
+        st.session_state["checklist_tasks"].append({
+            "id": uuid.uuid4().hex,
+            "stage": task_stage,
+            "task": task_description.strip(),
+            "completed": False,
+            "due_date": (
+                task_due_date.isoformat() if task_due_date is not None else None
+            ),
+        })
+
+for task in st.session_state["checklist_tasks"]:
+    completion_key = f"checklist_completed_{task['id']}"
+    text_key = f"checklist_text_{task['id']}"
+    if completion_key in st.session_state:
+        task["completed"] = st.session_state[completion_key]
+    if text_key in st.session_state and st.session_state[text_key].strip():
+        task["task"] = st.session_state[text_key].strip()
+
+completed_tasks, total_tasks, completion = checklist_progress(
+    st.session_state["checklist_tasks"]
+)
+st.progress(completion)
+st.write(t(
+    "checklist_progress",
+    completed=completed_tasks,
+    total=total_tasks,
+    percent=f"{completion * 100:.0f}",
+))
+
+filter_labels = {
+    "all": "filter_all",
+    "pending": "filter_pending",
+    "completed": "filter_completed",
+}
+checklist_filter = st.selectbox(
+    t("checklist_filter"),
+    list(filter_labels),
+    format_func=lambda status: translate(
+        filter_labels[status], selected_language
+    ),
+    key="checklist_filter",
+)
+visible_tasks = filter_checklist_tasks(
+    st.session_state["checklist_tasks"],
+    checklist_filter,
+)
+
+if not st.session_state["checklist_tasks"]:
+    st.info(t("checklist_empty"))
+else:
+    updated_tasks = {
+        task["id"]: dict(task)
+        for task in st.session_state["checklist_tasks"]
+    }
+    for stage in checklist_stages:
+        stage_tasks = [
+            task for task in visible_tasks if task["stage"] == stage
+        ]
+        if not stage_tasks:
+            continue
+        st.subheader(t(checklist_stages[stage]))
+        for task in stage_tasks:
+            completion_key = f"checklist_completed_{task['id']}"
+            text_key = f"checklist_text_{task['id']}"
+            if completion_key not in st.session_state:
+                st.session_state[completion_key] = task["completed"]
+            if text_key not in st.session_state:
+                st.session_state[text_key] = task["task"]
+            task_col, completed_col = st.columns([4, 1])
+            edited_task = task_col.text_input(
+                t("checklist_task"),
+                max_chars=300,
+                key=text_key,
+            )
+            marked_complete = completed_col.checkbox(
+                f"{edited_task or task['task']} — {t('checklist_completed')}",
+                key=completion_key,
+            )
+            if edited_task.strip():
+                updated_tasks[task["id"]]["task"] = edited_task.strip()
+            else:
+                st.error(t("checklist_task_required"))
+            updated_tasks[task["id"]]["completed"] = marked_complete
+            if is_task_overdue(task, date.today()):
+                st.warning(
+                    f"{t('checklist_overdue')}: {task['task']} "
+                    f"({task['due_date']})"
+                )
+    st.session_state["checklist_tasks"] = list(updated_tasks.values())
 
 st.header(f"📄 {t('download_plan')}", anchor="download-event-plan")
 
@@ -1473,6 +1758,13 @@ if actual_total > expense_budget:
     )
 elif remaining_budget == 0:
     st.warning(t("budget_fully_used"))
+elif budget_status(actual_total, expense_budget) == "approaching":
+    st.warning(
+        t(
+            "budget_approaching",
+            percent=f"{actual_total / expense_budget * 100:.1f}",
+        )
+    )
 else:
     st.success(t("within_budget"))
 

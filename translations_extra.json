@@ -2,7 +2,7 @@
   "ar": {
     "actual_by_category": "الإنفاق الفعلي حسب الفئة",
     "actual_cost": "التكلفة الفعلية (₹)",
-    "ai_busy": "Gemini ????? ??????. ????? ???????? ??? ????? ?? ???????? ??? ????.",
+    "ai_busy": "Gemini مشغول مؤقتًا. يُرجى الانتظار بضع دقائق ثم إعادة المحاولة.",
     "ai_empty_response": "أعاد الذكاء الاصطناعي استجابة فارغة. يرجى المحاولة مرة أخرى.",
     "ai_failed": "لم نتمكن من إنشاء خطة حدث الذكاء الاصطناعي الخاصة بك.",
     "ai_missing_key": "تحتاج ميزات الذكاء الاصطناعي إلى تكوين GEMINI_API_KEY في أسرار Streamlit.",
@@ -169,7 +169,7 @@
   "de": {
     "actual_by_category": "Tatsächliche Ausgaben nach Kategorie",
     "actual_cost": "Tatsächliche Kosten (£)",
-    "ai_busy": "Gemini ist vor?bergehend nicht verf?gbar. Bitte warten Sie einige Minuten und versuchen Sie es erneut.",
+    "ai_busy": "Gemini ist vorübergehend nicht verfügbar. Bitte warten Sie einige Minuten und versuchen Sie es erneut.",
     "ai_empty_response": "Die KI hat eine leere Antwort zurückgegeben. Bitte versuchen Sie es erneut.",
     "ai_failed": "Wir konnten Ihren KI-Veranstaltungsplan nicht erstellen.",
     "ai_missing_key": "Für KI-Funktionen ist ein GEMINI_API_KEY erforderlich, der in Streamlit-Geheimnissen konfiguriert ist.",
@@ -503,7 +503,7 @@
   "fr": {
     "actual_by_category": "Dépenses réelles par catégorie",
     "actual_cost": "Coût réel ( ₹ )",
-    "ai_busy": "Gemini est temporairement indisponible. Veuillez patienter quelques minutes, puis r?essayer.",
+    "ai_busy": "Gemini est temporairement indisponible. Veuillez patienter quelques minutes, puis réessayer.",
     "ai_empty_response": "L’IA a renvoyé une réponse vide. Veuillez réessayer.",
     "ai_failed": "Nous n'avons pas pu générer votre plan d'événement IA.",
     "ai_missing_key": "Les fonctionnalités d'IA nécessitent une GEMINI_API_KEY configurée dans les secrets Streamlit.",

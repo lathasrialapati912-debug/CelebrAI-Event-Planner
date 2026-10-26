@@ -10,6 +10,8 @@ Celebration & Event Planner is an interactive web application designed to make o
 * 🎨 **Interactive Themes** — Explore attractive designs and visual styles.
 * 🎂 **Multiple Celebrations** — Plan special occasions according to your needs.
 * 💰 **Budget-Friendly Planning** — Organize your event based on your budget and preferences.
+* ✅ **Event Checklist** — Add and edit tasks, group them by planning stage, and track completion and overdue items.
+* 💾 **Plan Backups** — Download and restore validated JSON backups for event details, preferences, expenses, invitations, and checklist progress.
 * 🌐 **Multilingual Interface** — Switch the application interface among English, Telugu, Hindi, Tamil, Kannada, French, German, Spanish, Japanese, Korean, Chinese, and Arabic.
 * ✨ **Interactive User Interface** — Enjoy a modern and user-friendly experience.
 * ♿ **Accessibility support** — Keyboard-visible focus, reduced-motion support, and text alternatives for expense charts.
@@ -91,20 +93,29 @@ The language selector is above the welcome title. Interface translations are
 stored in `translations.py` and `translations_extra.json`; AI-generated plans
 may still be returned in English.
 
+Plan backups are downloaded to and restored from your device. They are not
+persisted by the application between browser sessions. Imported backups are
+UTF-8 JSON files limited to 1 MiB and are validated before the current plan is
+changed. Backups do not include API keys or other application secrets.
+
 ## 📂 Project Structure
 
 ```text
 event-planner/
 ├── app.py
 ├── app_resources.py
+├── checklist_utils.py
 ├── expense_utils.py
+├── plan_utils.py
 ├── translations.py
 ├── translations_extra.json
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
 └── tests/
-    └── test_app.py
+    ├── test_app.py
+    ├── test_checklist_utils.py
+    └── test_plan_utils.py
 ```
 
 *Note: Your actual project may contain additional files and folders.*
@@ -114,6 +125,7 @@ event-planner/
 * Keep API keys and credentials private.
 * Never commit `.streamlit/secrets.toml`, `.env` files, or other credentials.
 * Use Streamlit Secrets for local and deployed configuration.
+* GitHub Actions runs the test suite, Python syntax compilation, Bandit, and pip-audit.
 
 ## 🎯 Project Objective
 

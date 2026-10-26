@@ -27,8 +27,17 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest
+          python -m pip install pytest bandit pip-audit
           if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
+
+      - name: Check Python syntax
+        run: python -m compileall -q app.py app_resources.py expense_utils.py checklist_utils.py plan_utils.py translations.py
+
+      - name: Run static security scan
+        run: python -m bandit -q -r app.py app_resources.py expense_utils.py checklist_utils.py plan_utils.py
+
+      - name: Audit dependencies
+        run: python -m pip_audit -r requirements.txt
 
       - name: Run automated tests
         run: python -m pytest -v
